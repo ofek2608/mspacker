@@ -1,6 +1,6 @@
 {
   "name": "create-mspacker",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Create an MSPacker project: Minecraft data packs written in TypeScript.",
   "license": "MIT",
   "repository": {

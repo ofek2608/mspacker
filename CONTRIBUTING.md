@@ -5,7 +5,7 @@
 ```
 packages/mspacker/         the tool (CLI `mspacker`) and the runtime user code imports
 packages/create-mspacker/  `npm create mspacker`: standalone (no dependency on the tool), owns the
-                              project template; released with the same version as mspacker
+                              project template; versioned separately (bump MSPACKER_RANGE in its template.ts when needed)
 examples/demo/                a real project used for manual end-to-end checks
 docs/                         the Starlight documentation site
 ```

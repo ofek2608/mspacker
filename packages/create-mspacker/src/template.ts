@@ -28,8 +28,8 @@ export interface InitOptions {
   log: (s: string) => void;
 }
 
-/** Version of this package; mspacker and create-mspacker are released together. */
-const OWN_VERSION: string = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")).version;
+/** Version range of @ofekn/mspacker that new projects depend on. Versioned separately from this package: raise it when a project made by this template needs a newer library. */
+export const MSPACKER_RANGE = "^0.1.0";
 
 /** Scaffold a project: config, package.json `#mc` import, tsconfig, .gitignore, sample source. */
 export function scaffold(dir: string, opts: InitOptions): void {
@@ -67,7 +67,7 @@ export default defineConfig({
   pkg.imports = { ...(pkg.imports ?? {}), "#mc": "./.mspacker/gen/index.ts" };
   pkg.scripts = { gen: "mspacker gen", build: "mspacker build", dev: "mspacker dev", typecheck: "tsc --noEmit", ...(pkg.scripts ?? {}) };
   if (!pkg.dependencies?.["@ofekn/mspacker"] && !pkg.devDependencies?.["@ofekn/mspacker"]) {
-    pkg.devDependencies = { ...(pkg.devDependencies ?? {}), "@ofekn/mspacker": `^${OWN_VERSION}` };
+    pkg.devDependencies = { ...(pkg.devDependencies ?? {}), "@ofekn/mspacker": MSPACKER_RANGE };
   }
   if (!pkg.dependencies?.typescript && !pkg.devDependencies?.typescript) {
     pkg.devDependencies = { ...(pkg.devDependencies ?? {}), typescript: "^7.0.2" };
