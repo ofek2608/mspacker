@@ -1,6 +1,7 @@
 /**
- * Macro functions: a function with a parameter is a macro function. Its parameter is a proxy whose
- * properties are markers (`args.x` stands for `$(x)`).
+ * Macro functions: every function is called with a proxy whose properties are markers (`args.x`
+ * stands for `$(x)`). A function that writes one into a command has macro lines; nothing else
+ * sets macro functions apart.
  *
  * Markers are objects, recognized by a symbol, never by their text: a plain string containing
  * "$(x)" is never a macro. A command line becomes a macro line (`$...`) when a marker is written
@@ -175,8 +176,11 @@ export function hasMacroArg(v: unknown): boolean {
   return Object.values(v).some(hasMacroArg);
 }
 
-/** The `args` proxy passed to the macro function `owner` (called `where` in errors). */
-export function macroArgs(owner: object, where: string): unknown {
+/**
+ * The `args` proxy passed to every function `owner` (called `where` in errors). Reading an argument
+ * is what makes it a macro function; `supported` is false before 1.20.2.
+ */
+export function macroArgs(owner: object, where: string, supported = true): unknown {
   const cache = new Map<string, MarkerObject>();
   return new Proxy(
     {},
@@ -186,6 +190,7 @@ export function macroArgs(owner: object, where: string): unknown {
         if (!NAME.test(prop)) {
           throw new MacroError(`Invalid macro argument name "${prop}" in ${where}: only letters, digits and _ are allowed.`);
         }
+        if (!supported) throw new MacroError(`${where} uses macro argument args.${prop}. Macros need Minecraft 1.20.2 or newer.`);
         let m = cache.get(prop);
         if (!m) {
           m = markerWithQuoted({ owner, ownerName: where, label: `args.${prop}` }, `$(${prop})`);

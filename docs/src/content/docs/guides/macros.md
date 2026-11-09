@@ -3,7 +3,7 @@ title: Macros
 description: Functions that take arguments when they're called in game.
 ---
 
-A function with a parameter is a [macro function](https://minecraft.wiki/w/Function_(Java_Edition)#Macros):
+A function that uses `args` is a [macro function](https://minecraft.wiki/w/Function_(Java_Edition)#Macros):
 the game fills in the values when it's called. Macros need Minecraft 1.20.2 or newer.
 
 ```ts

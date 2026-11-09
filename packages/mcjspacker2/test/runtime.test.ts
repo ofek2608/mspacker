@@ -687,7 +687,21 @@ describe("macro functions", () => {
       $.say(args.x);
     }
     meta(Old, { file: "main.ts", name: "Old", mcfunction: true });
-    expect(() => build(15)).toThrow(/Macros need Minecraft 1.20.2 or newer/);
+    expect(() => build(15)).toThrow(/Old \(main\.ts\) uses macro argument args\.x\. Macros need Minecraft 1\.20\.2 or newer/);
+  });
+
+  it("treats every function the same: parameters alone don't make a macro function", () => {
+    resetState(parseNamespace("pk:gen"), { version: "1.20.1", packFormat: 15 });
+    function Unused(_ctx: unknown) {
+      $.say("hi");
+    }
+    const Defaults = (args: any = {}) => $.say(String(Object.keys(args).length));
+    meta(Unused, { file: "main.ts", name: "Unused", mcfunction: true });
+    meta(Defaults, { file: "main.ts", name: "Defaults", mcfunction: true });
+    const files = build(15);
+    expect(files["data/pk/functions/gen/main/unused.mcfunction"]).toBe("say hi\n");
+    // Every function gets `args`, so a default value isn't used.
+    expect(files["data/pk/functions/gen/main/defaults.mcfunction"]).toBe("say 0\n");
   });
 });
 

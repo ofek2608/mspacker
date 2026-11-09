@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { HEADER, instrument } from "../src/build/transform.js";
+import { HEADER, instrument, parseTags } from "../src/build/transform.js";
 
 const run = (code: string) => instrument(code, "dir/file.ts", { typescript: true }).slice(HEADER.length);
 
@@ -17,6 +17,15 @@ describe("instrument", () => {
   it("parses @dev, also right after @mcfunction", () => {
     expect(run(`/** @mcfunction @dev */\nfunction Foo() {}\n`)).toContain(`"mcfunction":true,"dev":true`);
     expect(run(`/** @dev @load */\nfunction Foo() {}\n`)).toContain(`"load":true,"dev":true`);
+  });
+
+  it("reads tags only at the start of a line or after another tag, never in prose or code", () => {
+    expect(parseTags("* Runs before the @tick handler. @mcfunction ")).toEqual({});
+    expect(parseTags("*\n * Like `@load`, but later.\n * @mcfunction\n ")).toEqual({ mcfunction: true });
+    expect(parseTags("*\n * ```ts\n * @tick\n * ```\n ")).toEqual({});
+    expect(parseTags("*\n * @returns the @tick handler\n ")).toEqual({});
+    expect(parseTags("* @mcfunction a/b @dev @tick ")).toEqual({ mcfunction: "a/b", dev: true, tick: true });
+    expect(parseTags("* @mcfunction `x` ")).toEqual({ mcfunction: true });
   });
 
   it("wraps arrows, naming them after their variable and nesting correctly", () => {

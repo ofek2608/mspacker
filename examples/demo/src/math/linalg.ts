@@ -337,23 +337,38 @@ export function Identity(args: Macro<"n">) {
 export function MatPow(args: Macro<"e">) {
   matPow("A", args.e, "C");
 }
-/** `demo:math out` = det(A). @mcfunction */
+/**
+ * `demo:math out` = det(A).
+ * @mcfunction
+ */
 export function Det() {
   det("A", "out");
 }
-/** `demo:math out` = trace(A). @mcfunction */
+/**
+ * `demo:math out` = trace(A).
+ * @mcfunction
+ */
 export function Trace() {
   trace("A", "out");
 }
-/** C = A⁻¹. @mcfunction */
+/**
+ * C = A⁻¹.
+ * @mcfunction
+ */
 export function Inverse() {
   inverse("A", "C");
 }
-/** W solves A·W = U. @mcfunction */
+/**
+ * W solves A·W = U.
+ * @mcfunction
+ */
 export function Solve() {
   solve("A", "U", "W");
 }
-/** W = A·U. @mcfunction */
+/**
+ * W = A·U.
+ * @mcfunction
+ */
 export function MatVec() {
   matVec("A", "U", "W");
 }
@@ -369,11 +384,17 @@ export function VecSub() {
 export function VecScale(args: Macro<"k">) {
   vecScale("U", args.k, "W");
 }
-/** `demo:math out` = U · V. @mcfunction */
+/**
+ * `demo:math out` = U · V.
+ * @mcfunction
+ */
 export function Dot() {
   dot("U", "V", "out");
 }
-/** `demo:math out` = |U|. @mcfunction */
+/**
+ * `demo:math out` = |U|.
+ * @mcfunction
+ */
 export function Norm() {
   norm("U", "out");
 }

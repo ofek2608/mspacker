@@ -32,16 +32,45 @@ function jsdocTags(...nodes: (AnyNode | undefined)[]): Tags {
     if (!comments?.length) continue;
     const doc = [...comments].reverse().find((c) => c.type === "CommentBlock" && c.value.startsWith("*"));
     if (!doc) continue;
-    const out: Tags = {};
-    // The id can't start with "@", so `@mcfunction @dev` is two tags.
-    const m = /@mcfunction\b(?:[ \t]+([^\s*@][^\s*]*))?/.exec(doc.value);
-    if (m) out.mcfunction = m[1] ?? true;
-    if (/@load\b/.test(doc.value)) out.load = true;
-    if (/@tick\b/.test(doc.value)) out.tick = true;
-    if (/@dev\b/.test(doc.value)) out.dev = true;
-    return out;
+    return parseTags(doc.value);
   }
   return {};
+}
+
+/**
+ * Tags in a JSDoc comment. A tag counts only at the start of a line or right after another tag
+ * (`@dev @load`); a tag word in prose or in code (`` `@tick` ``, fenced blocks) is just text.
+ */
+export function parseTags(comment: string): Tags {
+  const out: Tags = {};
+  let fenced = false;
+  for (const raw of comment.split("\n")) {
+    const line = raw.replace(/^\s*\*?\s?/, "");
+    if (/^\s*```/.test(line)) {
+      fenced = !fenced;
+      continue;
+    }
+    if (fenced) continue;
+    const words = line.replace(/`[^`]*`/g, " ` ").trim().split(/\s+/);
+    for (let i = 0; i < words.length && words[i]!.startsWith("@"); i++) {
+      const tag = words[i]!.slice(1);
+      if (tag === "mcfunction") {
+        // The id can't start with "@", so `@mcfunction @dev` is two tags.
+        const next = words[i + 1];
+        if (next && !next.startsWith("@") && next !== "`") {
+          out.mcfunction = next;
+          i++;
+        } else {
+          out.mcfunction = true;
+        }
+      } else if (tag === "load" || tag === "tick" || tag === "dev") {
+        out[tag] = true;
+      }
+    }
+  }
+  // Same key order whatever order the tags were written in.
+  const { mcfunction, load, tick, dev } = out;
+  return { ...(mcfunction && { mcfunction }), ...(load && { load }), ...(tick && { tick }), ...(dev && { dev }) };
 }
 
 function isNode(v: unknown): v is AnyNode {

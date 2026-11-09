@@ -1,6 +1,6 @@
 import { $, type Macro, type MacroArg, type Vec3 } from "#mc";
 
-// A function with a parameter is a macro function: the game fills in `args` when it's called.
+// A function that uses `args` is a macro function: the game fills them in when it's called.
 export function Gift(args: Macro<"player" | "item" | "count" | "from">) {
   $.give(args.player, args.item, args.count);
   $.tellraw(args.player, [{ text: args.from.quoted, color: "gold" }, { text: " sent you a gift!" }]);

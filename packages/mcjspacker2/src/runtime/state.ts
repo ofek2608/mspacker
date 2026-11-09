@@ -216,15 +216,11 @@ export function recordBody(fn: Function): string[] {
   if (cached) return cached;
   const meta = s.metas.get(fn);
   const where = describe(fn, meta);
-  // A function with a parameter is a macro function: the parameter hands out macro arguments.
-  const macro = fn.length > 0;
-  if (macro && s.ctx.packFormat < FORMAT_MACROS) {
-    throw new Error(`${where} has a parameter, which makes it a macro function. Macros need Minecraft 1.20.2 or newer.`);
-  }
   const buf: BufferItem[] = [];
   s.stack.push(buf);
   try {
-    withOwner(fn, where, () => (macro ? fn(macroArgs(fn, where)) : fn()));
+    // Every function gets `args`: one that uses an argument has macro lines, any other is plain.
+    withOwner(fn, where, () => fn(macroArgs(fn, where, s.ctx.packFormat >= FORMAT_MACROS)));
   } finally {
     s.stack.pop();
   }

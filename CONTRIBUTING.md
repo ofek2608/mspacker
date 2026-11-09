@@ -39,7 +39,7 @@ In `examples/demo`: `npx mcjs2 gen`, `npx mcjs2 build`, `npx mcjs2 dev`.
      anonymous ones get a placeholder, and once everything is recorded they're named by a hash of
      their commands (references first, cycles by position) and the placeholders are replaced.
    - `parsers.ts`: the argument type registry (see below).
-   - `macro.ts`: macro functions. A recorded function with a parameter gets an `args` proxy whose
+   - `macro.ts`: macro functions. Every recorded function gets an `args` proxy (no arity check) whose
      properties are markers: objects with a symbol, owned by that function. Markers are never
      recognized by text: while a command line is built, reading a marker's text records it
      (`collectMacros`), and lines that used one get the `$` prefix. Markers refuse `toString`;

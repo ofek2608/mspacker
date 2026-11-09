@@ -29,7 +29,18 @@ and the function, see [function names](/guides/function-ids/).
 | `/** @mcfunction custom/name */` | Uses a [different name](/guides/function-ids/#choosing-a-name). |
 | `/** @dev */` | Only exists while developing, see [debug-only functions](#debug-only-functions). |
 
-Comments can be combined: `/** @load @mcfunction setup */`.
+Comments can be combined: `/** @load @mcfunction setup */`. With a description, put the marks on
+their own line, after it:
+
+```ts
+/**
+ * Gives every player a starting kit.
+ * @load
+ */
+```
+
+A mark in the middle of a sentence is just text, so "runs before the @tick function" doesn't make a
+function run every tick.
 
 ```ts
 /** @load */
