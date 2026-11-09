@@ -65,23 +65,43 @@ const str = (type: string, examples: unknown[] = ["probe"]): ParserDef => ({
   examples: () => examples,
 });
 
-function coords(n: number, type: string, allowLocal: boolean, examples: unknown[]): ParserDef {
+const COORD = /^(?:[~^](?:-?(?:\d+\.?\d*|\.\d+))?|-?(?:\d+\.?\d*|\.\d+))$/;
+
+/** Split a `"x y z"` coordinate string; null if it isn't `n` coordinates. */
+function splitCoords(v: unknown, n: number): string[] | null {
+  if (!isStr(v)) return null;
+  const parts = v.trim().split(/\s+/);
+  return parts.length === n && parts.every((p) => COORD.test(p)) ? parts : null;
+}
+
+/**
+ * Selectors, player names and UUIDs. Rejects strings that look like coordinates (`"~ ~1 ~"`), so overloads such
+ * as `tp <targets> <destination>` vs `tp <targets> <location>` resolve by content.
+ */
+const target = (type: string, examples: unknown[] = ["@s"]): ParserDef => ({
+  ...str(type, examples),
+  test: (v) => isStr(v) && (v.startsWith("@") || !/^[~^]|\s/.test(v)),
+});
+
+function coords(n: number, type: string, allowLocal: boolean, examples: string[]): ParserDef {
   return {
     type: () => type,
-    test: (v) => Array.isArray(v) && v.length === n && v.every((c) => isNum(c) || isStr(c)),
+    test: (v) => splitCoords(v, n) !== null,
     serialize: (v) => {
-      checkLocalCoords(v as unknown[], allowLocal);
-      return (v as unknown[]).map(String).join(" ");
+      const parts = splitCoords(v, n);
+      if (!parts) throw new Error(`Expected ${n} coordinates like "${examples[0]}", got ${JSON.stringify(v)}.`);
+      checkLocalCoords(parts, allowLocal);
+      return parts.join(" ");
     },
     examples: () => examples,
   };
 }
 
 /** Throws on positions Minecraft would reject: mixed `^`/world coords, or `^` where it's unsupported. */
-export function checkLocalCoords(coords: unknown[], allowLocal: boolean): void {
-  const local = coords.filter((c) => typeof c === "string" && c.startsWith("^")).length;
+export function checkLocalCoords(coords: string[], allowLocal: boolean): void {
+  const local = coords.filter((c) => c.startsWith("^")).length;
   if (!local) return;
-  const text = coords.map(String).join(" ");
+  const text = coords.join(" ");
   if (!allowLocal) throw new Error(`Local coordinates (^) are not allowed here: "${text}".`);
   if (local !== coords.length) {
     throw new Error(`Cannot mix local coordinates and world coordinates together: "${text}". Use all ^ or none.`);
@@ -239,16 +259,16 @@ export const PARSERS: Record<string, ParserDef> = {
     examples: (p) => (p?.type === "word" ? ["probe"] : ["probe text"]),
   },
 
-  "minecraft:vec3": coords(3, "Vec3", true, [[1, "~", "~1"], ["^", "^", "^1"]]),
-  "minecraft:block_pos": coords(3, "BlockPos", true, [[0, 64, "~"]]),
-  "minecraft:vec2": coords(2, "Vec2", false, [[1, "~"]]),
-  "minecraft:column_pos": coords(2, "ColumnPos", false, [[0, 0]]),
-  "minecraft:rotation": coords(2, "Rotation", false, [[0, "~"]]),
+  "minecraft:vec3": coords(3, "Vec3", true, ["1 ~ ~1", "^ ^ ^1"]),
+  "minecraft:block_pos": coords(3, "BlockPos", true, ["0 64 ~"]),
+  "minecraft:vec2": coords(2, "Vec2", false, ["1 ~"]),
+  "minecraft:column_pos": coords(2, "ColumnPos", false, ["0 0"]),
+  "minecraft:rotation": coords(2, "Rotation", false, ["0 ~"]),
 
   // Player-only arguments need a selector that can only match players.
-  "minecraft:entity": { ...str("Selector"), examples: (p) => [p?.type === "players" ? "@p" : "@s"] },
-  "minecraft:game_profile": str("Selector", ["@p"]),
-  "minecraft:score_holder": str("ScoreHolder", ["@s"]),
+  "minecraft:entity": { ...target("Selector"), examples: (p) => [p?.type === "players" ? "@p" : "@s"] },
+  "minecraft:game_profile": target("Selector", ["@p"]),
+  "minecraft:score_holder": target("ScoreHolder", ["@s"]),
   "minecraft:message": str("string", ["probe text"]),
   "minecraft:uuid": str("string", ["dd12be42-52a9-4a91-a8a1-11c01849e498"]),
   "minecraft:objective": str("string", ["probe"]),
@@ -283,7 +303,7 @@ export const PARSERS: Record<string, ParserDef> = {
   "minecraft:int_range": loose("Range", [3, "1..5"]),
   "minecraft:float_range": loose("Range", ["0.5.."]),
   "minecraft:time": loose("Duration", [20, "1s"]),
-  "minecraft:angle": loose("RotationCoord", [0]),
+  "minecraft:angle": loose("number | RotationCoord", [0]),
 
   "minecraft:component": textComponent,
   "minecraft:style": {

@@ -16,15 +16,6 @@ export function raw(line: string): void {
   emitLine(line);
 }
 
-/** Template-tag form of `raw`: cmd`say ${name}`. Functions interpolate as their ids. */
-export function cmd(strings: TemplateStringsArray, ...values: unknown[]): void {
-  let out = strings[0] ?? "";
-  values.forEach((v, i) => {
-    out += (typeof v === "function" ? functionRef(v) : String(v)) + (strings[i + 1] ?? "");
-  });
-  emitLine(out);
-}
-
 /**
  * Add entries to a datapack tag, e.g. `tag("function", "minecraft:load", [Init])`.
  * `registry` is the folder under `tags/` (function, block, item, entity_type, ...).

@@ -16,7 +16,17 @@ const TSCONFIG = {
 };
 
 /** Scaffold a project: config, package.json `#mc` import, tsconfig, .gitignore, sample source. */
-export function init(dir: string, opts: { version?: string; namespace?: string; log: (s: string) => void }): void {
+export interface InitOptions {
+  version?: string;
+  namespace?: string;
+  description?: string;
+  log: (s: string) => void;
+}
+
+/** Version of this package, used for the scaffolded dependency range. */
+const OWN_VERSION: string = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")).version;
+
+export function init(dir: string, opts: InitOptions): void {
   const ns = opts.namespace ?? basename(dir).toLowerCase().replace(/[^a-z0-9_.-]/g, "_");
   const write = (rel: string, content: string) => {
     const p = join(dir, rel);
@@ -36,7 +46,7 @@ export function init(dir: string, opts: { version?: string; namespace?: string; 
 
 export default defineConfig({
   version: ${JSON.stringify(opts.version ?? "26.3")},
-  namespace: ${JSON.stringify(ns)},
+  namespace: ${JSON.stringify(ns)},${opts.description ? `\n  description: ${JSON.stringify(opts.description)},` : ""}
   // Dev server directory. A server jar you put here is used as-is; otherwise the
   // official jar for \`version\` is downloaded. Override with MCJS2_SERVER_DIR.
   server: { dir: "server" },
@@ -49,9 +59,15 @@ export default defineConfig({
   const pkg = existsSync(pkgPath) ? JSON.parse(readFileSync(pkgPath, "utf8")) : { name: basename(dir), private: true };
   pkg.type ??= "module";
   pkg.imports = { ...(pkg.imports ?? {}), "#mc": "./.mcjs2/gen/index.ts" };
-  pkg.scripts = { gen: "mcjs2 gen", build: "mcjs2 build", dev: "mcjs2 dev", ...(pkg.scripts ?? {}) };
+  pkg.scripts = { gen: "mcjs2 gen", build: "mcjs2 build", dev: "mcjs2 dev", typecheck: "tsc --noEmit", ...(pkg.scripts ?? {}) };
+  if (!pkg.dependencies?.mcjspacker2 && !pkg.devDependencies?.mcjspacker2) {
+    pkg.devDependencies = { ...(pkg.devDependencies ?? {}), mcjspacker2: `^${OWN_VERSION}` };
+  }
+  if (!pkg.dependencies?.typescript && !pkg.devDependencies?.typescript) {
+    pkg.devDependencies = { ...(pkg.devDependencies ?? {}), typescript: "^7.0.2" };
+  }
   writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + "\n");
-  opts.log("update package.json (imports #mc, scripts)");
+  opts.log("update package.json");
 
   write("tsconfig.json", JSON.stringify(TSCONFIG, null, 2) + "\n");
 

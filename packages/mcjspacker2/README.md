@@ -8,7 +8,7 @@ import { Tp, Execute, Function, Say } from "#mc";
 
 /** @mcfunction */
 export function StartRound() {
-  Tp("@a", [0, "~10", 0]);
+  Tp("@a", "0 ~10 0");
   Execute().As("@a").At("@s").Run(() => Say("go!"));
   Function(Helper);
 }
@@ -16,12 +16,22 @@ export function StartRound() {
 function Helper() { Say("helper"); }   // emitted because StartRound references it
 ```
 
+Full documentation: the Starlight site in [`docs/`](../../docs) (`pnpm docs` from the repo root).
+
 ## Setup
 
 ```sh
+npm create mcjspacker2@latest      # interactive: directory, namespace, version, description
+# or, in an existing project:
 pnpm add -D mcjspacker2 typescript
 pnpm mcjs2 init --mc-version 26.3
 ```
+
+The version list has the latest release and snapshot, the latest patch of every minor release since 1.13,
+every 1.21 game drop, and the April Fools versions at the bottom. **Other version…** searches every version
+with data packs. Non-interactive: `npm create mcjspacker2@latest my-pack -- --version 26.3 --namespace mypack --yes`.
+
+**Positions** are strings, as in game: `Tp("@s", "~ ~1 ~")`, `Setblock("0 64 0", "stone")`.
 
 **Server jar.** If the server dir contains a jar, it is used as-is. The server dir is
 `server.dir` in the config, the `MCJS2_SERVER_DIR` env var, or `<project>/server` by default.
@@ -76,7 +86,7 @@ Your TypeScript runs **at build time**. Each command call appends one line to th
 
 ## Escape hatches
 
-- `raw("any command")` and ``cmd`say ${x}` `` emit lines verbatim. Inside `cmd`, functions are interpolated as their ids.
+- `raw("any command")` emits a line verbatim. Use `fnId(fn)` to put a function's id into it: ``raw(`schedule function ${fnId(Tick)} 1s`)``.
 - `tag("function", "minecraft:load", [Init, "other:fn"])` and `resource("advancement", "mypack:root", {...})` add tags and JSON resources.
 - `nbt.byte(1)`, `nbt.intArray([...])`, `nbt.raw("...")` give typed SNBT values.
 - Everything in `datapack/` (the `raw` dir) is copied into the pack verbatim. When a tag JSON file exists both there and in the generated output, the two are merged.

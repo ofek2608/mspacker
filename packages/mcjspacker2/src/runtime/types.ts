@@ -4,25 +4,26 @@ import type { NbtCompound, NbtValue } from "./nbt.js";
 export type { NbtCompound, NbtValue };
 
 /** Absolute (`5`) or relative (`~5`) coordinate. */
-export type WorldCoord = number | `${number}` | `~${number}` | "~";
+export type WorldCoord = `${number}` | `~${number}` | "~";
 /** Local coordinate (`^5`), relative to the executor's rotation. */
 export type LocalCoord = `^${number}` | "^";
 /** Any single coordinate. Positions can't mix local with world coordinates. */
 export type PositionCoord = WorldCoord | LocalCoord;
-/** Either all world coordinates or all local ones; Minecraft rejects a mix. */
-export type Position = [WorldCoord, WorldCoord, WorldCoord] | [LocalCoord, LocalCoord, LocalCoord];
+/** `"x y z"`: all world coordinates (`"~ ~1 5"`) or all local ones (`"^ ^ ^1"`); Minecraft rejects a mix. */
+export type Position = `${WorldCoord} ${WorldCoord} ${WorldCoord}` | `${LocalCoord} ${LocalCoord} ${LocalCoord}`;
 export type Vec3 = Position;
 
 export type BlockCoord = WorldCoord;
+/** `"x y z"` block position, e.g. `"~ ~-1 ~"` or `"0 64 0"`. */
 export type BlockPos = Position;
 
-/** Two-coordinate arguments don't accept local coordinates. */
-export type Vec2 = [WorldCoord, WorldCoord];
-export type ColumnPos = [WorldCoord, WorldCoord];
+/** `"x z"`. Two-coordinate arguments don't accept local coordinates. */
+export type Vec2 = `${WorldCoord} ${WorldCoord}`;
+export type ColumnPos = `${WorldCoord} ${WorldCoord}`;
 
-export type RotationCoord = number | `${number}` | `~${number}` | "~";
-/** [yaw, pitch] */
-export type Rotation = [RotationCoord, RotationCoord];
+export type RotationCoord = `${number}` | `~${number}` | "~";
+/** `"yaw pitch"`, e.g. `"90 0"` or `"~ ~"`. */
+export type Rotation = `${RotationCoord} ${RotationCoord}`;
 
 export type SelectorBase = "@a" | "@e" | "@p" | "@r" | "@s" | "@n";
 /** Target selector (`@e[type=pig]`), player name or UUID. */

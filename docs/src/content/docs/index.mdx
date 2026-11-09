@@ -1,0 +1,50 @@
+---
+title: mcjspacker2
+description: Write Minecraft data packs in TypeScript, with a command library generated from the game itself.
+template: splash
+hero:
+  tagline: Write Minecraft data packs in TypeScript. Every command, argument and registry id is typed for the exact version you target, because the library is generated from that version's own datagen.
+  actions:
+    - text: Get started
+      link: /getting-started/
+      icon: right-arrow
+    - text: How functions work
+      link: /guides/writing-functions/
+      variant: minimal
+---
+
+import { Card, CardGrid } from "@astrojs/starlight/components";
+
+```ts
+import { Execute, Function, Say, Tellraw, Tp } from "#mc";
+
+/** @mcfunction */
+export function StartRound() {
+  Tp("@a", "0 ~10 0");
+  Tellraw("@a", { text: "Fight!", color: "red" });
+  Execute().As("@a").At("@s").Run(() => Say("go!"));
+  Function(Cleanup);
+}
+
+function Cleanup() {
+  Say("cleaning up");
+}
+```
+
+<CardGrid>
+  <Card title="Generated from the game" icon="seti:json">
+    `mcjs2 gen` runs Minecraft's datagen and turns its command tree into typed functions, so the
+    library always matches your version, snapshots and April Fools versions included.
+  </Card>
+  <Card title="Functions are files" icon="document">
+    Each TypeScript function becomes an `.mcfunction`, named after its file and function name.
+    JSDoc tags mark entry points, `@load` and `@tick`.
+  </Card>
+  <Card title="Live reload" icon="rocket">
+    `mcjs2 dev` downloads the server, rebuilds on save and runs `/reload` over RCON.
+  </Card>
+  <Card title="Tested across versions" icon="approve-check">
+    Every release from 1.13.2 to the latest snapshot is checked against a real server, including
+    a probe of every command path.
+  </Card>
+</CardGrid>

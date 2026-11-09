@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { beforeEach, describe, expect, it } from "vitest";
 import { compactTree } from "../src/codegen/generate.js";
 import { bindTree, Chain, command, registerChain } from "../src/runtime/command.js";
-import { cmd, raw, tag } from "../src/runtime/index.js";
+import { fnId, raw, tag } from "../src/runtime/index.js";
 import { parseNamespace } from "../src/runtime/naming.js";
 import { collectOutput, resetState, type FnMeta } from "../src/runtime/state.js";
 
@@ -37,10 +37,10 @@ beforeEach(() => {
 describe("commands", () => {
   it("serializes overloads by argument types", () => {
     function Main() {
-      Tp("@a", [0, "~1", "~"]);
-      Tp("@a", ["^", "^1", "^-2"]);
+      Tp("@a", "0 ~1 ~");
+      Tp("@a", "^ ^1 ^-2");
       Tp("@s", "@p");
-      Tp([1, 2, 3]);
+      Tp("1 2 3");
       Tellraw("@a", { text: "hi", color: "red" });
     }
     meta(Main, { file: "main.ts", name: "Main", mcfunction: true });
@@ -51,7 +51,7 @@ describe("commands", () => {
 
   it("throws on bad arguments", () => {
     function Main() {
-      Tp("@a", [0, 1]);
+      Tp("@a", "0 1");
     }
     meta(Main, { file: "main.ts", name: "Main", mcfunction: true });
     expect(() => build()).toThrow(/No overload of "tp"/);
@@ -59,7 +59,7 @@ describe("commands", () => {
 
   it("rejects mixed local and world coordinates", () => {
     function Main() {
-      Tp("@a", [0, "~10", "^"]);
+      Tp("@a", "0 ~10 ^");
     }
     meta(Main, { file: "main.ts", name: "Main", mcfunction: true });
     expect(() => build()).toThrow(/Cannot mix local coordinates and world coordinates together: "0 ~10 \^"/);
@@ -168,10 +168,10 @@ describe("function references", () => {
     expect(() => build()).toThrow(/Duplicate function id "pk:gen\/same"/);
   });
 
-  it("supports overrides, load/tick tags, raw and cmd", () => {
+  it("supports overrides, load/tick tags and raw", () => {
     function Init() {
       raw("say raw");
-      cmd`function ${Init}`;
+      raw(`function ${fnId(Init)}`);
     }
     meta(Init, { file: "main.ts", name: "Init", mcfunction: "boot", load: true });
     tag("function", "pk:all", [Init, "pk:x"]);

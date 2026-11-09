@@ -1,4 +1,4 @@
-import { Say, Tellraw, Execute, Function, Scoreboard, Tp, Give, Setblock, Effect, Swing, raw, cmd, tag } from "#mc";
+import { Say, Tellraw, Execute, Function, Scoreboard, Tp, Give, Setblock, Effect, Swing, raw, fnId, tag } from "#mc";
 import { StartRound } from "./combat/arena.js";
 
 /** @load */
@@ -15,8 +15,8 @@ export function Tick() {
 /** @mcfunction */
 export function Greet() {
   Tellraw("@a", { text: "Hello from TypeScript!", color: "gold", bold: true });
-  Tp("@a", ["~", "~10", "~"]);
-  Setblock([0, 64, 0], "stone");
+  Tp("@a", "~ ~10 ~");
+  Setblock("0 64 0", "stone");
   Function(StartRound);
   Function(Helper);
   // Multi-command callbacks become their own anonymous function.
@@ -27,7 +27,7 @@ export function Greet() {
   Effect("give", "@a", "speed", 10, 1, true);
   Swing("@s", "mainhand"); // 26.4 added optional animation/duration args
   raw("say raw line");
-  cmd`function ${Helper}`;
+  raw(`function ${fnId(Helper)}`);
 }
 
 // Not tagged: emitted only because Greet references it.

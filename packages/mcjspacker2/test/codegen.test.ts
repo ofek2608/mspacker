@@ -48,17 +48,19 @@ describe("generate", () => {
         join(dir, "use.ts"),
         `import { Tp, Execute, Say, Function, Setblock, Effect } from "./gen/index.js";
 export function Main() {
-  Tp("@a", [0, "~1", "~2"]);
-  Tp("@a", ["^", "^1", "^2"]);
+  Tp("@a", "0 ~1 ~2");
+  Tp("@a", "^ ^1 ^2");
   Execute().As("@a").If("entity", "@s").Run(() => Say("x"));
   Function(Main);
-  Setblock([0, 0, 0], "stone");
+  Setblock("0 0 0", "stone");
   Effect("give", "@s", "minecraft:speed", 10);
 }
 // @ts-expect-error wrong arity for a position
-Tp("@a", [0, 1]);
+Setblock("0 1", "stone");
 // @ts-expect-error local and world coordinates can't mix
-Tp("@a", [0, "~1", "^"]);
+Setblock("0 ~1 ^", "stone");
+// @ts-expect-error positions are strings, not arrays
+Setblock([0, 1, 2], "stone");
 `,
       );
       writeFileSync(
