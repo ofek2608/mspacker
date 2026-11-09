@@ -4,7 +4,7 @@ import { $, fnId, tag } from "#mc";
 
 /** @load */
 export function Init() {
-  $.scoreboard.objectives.add("mcjs2", "dummy");
+  $.scoreboard.objectives.add.mcjs2.dummy;
   $.say("mcjs2-load-ok");
 }
 
@@ -23,7 +23,9 @@ export function Commands() {
   $.setblock("0 64 0", "stone");
   $.effect.give("@a", "speed", 10, 1, true);
   $.summon("pig", "0 70 0", { NoAI: true, CustomName: '"pig"' });
-  $.scoreboard.players.set("#x", "mcjs2", 5);
+  $.scoreboard.players.set("#x").mcjs2(5);
+  $.team.add.mcjs2_team;
+  $.team.modify.mcjs2_team.color.red;
   $.scoreboard.players.operation("#x", "mcjs2", "+=", "#x", "mcjs2");
   $.execute.store.result.score("#y", "mcjs2").run.scoreboard.players.get("#x", "mcjs2");
   $.execute.if.score("#x", "mcjs2")[">"]("#y", "mcjs2").run.say("gt");

@@ -1,12 +1,51 @@
 ---
 title: Writing functions
-description: How TypeScript functions become .mcfunction files.
+description: Turn TypeScript functions into Minecraft functions.
 ---
 
-## Your code runs at build time
+Each Minecraft function is a TypeScript function. Mark it with a comment and its commands become a
+`.mcfunction` file:
 
-mcjspacker2 doesn't translate TypeScript into commands. It **runs** your TypeScript when you build,
-and every command call appends one line to the function that is being recorded:
+```ts
+import { $ } from "#mc";
+
+/** @mcfunction */
+export function Heal() {
+  $.effect.give("@a", "instant_health", 1, 1);
+  $.say("Everyone healed!");
+}
+```
+
+Build the pack and run it in game with `/function mypack:main/heal`. The name comes from the file
+and the function, see [function names](/guides/function-ids/).
+
+## Marking functions
+
+| Comment | Effect |
+|---|---|
+| `/** @mcfunction */` | Becomes a Minecraft function. |
+| `/** @load */` | Also runs when the pack loads (and on `/reload`). |
+| `/** @tick */` | Also runs every tick. |
+| `/** @mcfunction custom/name */` | Uses a [different name](/guides/function-ids/#choosing-a-name). |
+
+Comments can be combined: `/** @load @mcfunction setup */`.
+
+```ts
+/** @load */
+export function Setup() {
+  $.scoreboard.objectives.add.kills.playerKillCount;
+}
+
+/** @tick */
+export function EveryTick() {
+  $.execute.as("@a").if.score("@s", "kills").matches("10..").run.give("@s", "diamond", 1);
+}
+```
+
+## Your code runs when you build
+
+Your TypeScript runs once, when you build the pack, and writes down the commands it calls. That
+makes JavaScript a tool for writing commands:
 
 ```ts
 /** @mcfunction */
@@ -15,43 +54,28 @@ export function Countdown() {
 }
 ```
 
+becomes
+
 ```mcfunction
 say 3...
 say 2...
 say 1...
 ```
 
-This means:
-
-- `if`, loops, variables and helper functions are evaluated at build time. A loop unrolls into
-  repeated commands. To branch in game, use [`$.execute`](/guides/execute/).
-- You can use any npm package or Node API to compute commands (read a JSON file, generate a grid of
-  positions, ...).
-- Commands must run inside a function. Calling `$.say(...)` at the top level of a module is an error.
-
-## Entry points
-
-A function becomes its own `.mcfunction` when it has a JSDoc tag:
-
-| Tag | Effect |
-|---|---|
-| `/** @mcfunction */` | Emit this function. |
-| `/** @load */` | Emit it and add it to `#minecraft:load`. |
-| `/** @tick */` | Emit it and add it to `#minecraft:tick`. |
-| `/** @mcfunction custom/id */` | Emit it under a different id. See [function ids](/guides/function-ids/#overriding-the-id). |
-
-Tags can be combined (`/** @load @mcfunction setup */`). They work on function declarations,
-function expressions and arrow functions assigned to a variable.
+- Loops repeat commands, `if` decides which commands to write, and variables hold values while
+  building. They don't exist in game.
+- To react to what happens in game (scores, players, blocks), use Minecraft's own tools:
+  [`execute`](/guides/execute/), scoreboards and storage.
+- You can use any npm package or read files to generate commands.
+- Commands must be inside a function. A command at the top of a file is an error.
 
 ## Calling other functions
-
-There are two ways to use another function, and they produce different output:
 
 ```ts
 /** @mcfunction */
 export function Main() {
-  $.function(Helper); // function mypack:main/helper
-  Helper();           // say helper  (inlined)
+  $.function(Helper);  // function mypack:main/helper
+  Helper();            // say helper
 }
 
 function Helper() {
@@ -59,33 +83,17 @@ function Helper() {
 }
 ```
 
-- `$.function(Helper)` emits a `function` command. `Helper` gets its own file even though it has no
-  tag, because it is referenced. The same happens for `.run(Helper)`, `$(Helper)`, `fnId(Helper)` and
-  `tag("function", ..., [Helper])`.
-- `Helper()` is a normal JavaScript call: its commands are written into `Main`.
+- `$.function(Helper)` calls `Helper` in game. `Helper` gets its own file automatically, even
+  without `@mcfunction`.
+- `Helper()` is a normal JavaScript call: `Helper`'s commands are copied into `Main`.
 
-Untagged functions that are never referenced aren't emitted. Recursion works: a function can
-reference itself with `$.function(Self)`.
+Functions that are never used and not marked aren't written. A function can call itself with
+`$.function(Self)`.
 
-### Recording order
+## Functions without a name
 
-Referenced functions are recorded one at a time, after the function that references them, not in
-the middle of it. `$.function(Helper)` writes the id and queues `Helper`. Long chains of functions
-calling each other therefore don't build up the JavaScript call stack.
-
-`Run(() => ...)` callbacks are the exception: they run right away, so they see your variables as
-they are at that point in the loop, and a callback with a single command can be inlined.
-
-`fnId()` of an anonymous function returns a placeholder, because its id is a hash of its commands,
-which aren't known yet. The placeholder is replaced with the id in commands, tags and resources,
-so use it in those, not for string processing.
-
-
-## Anonymous functions
-
-Functions without a usable name, such as inline arrows, get a deterministic id from a hash of
-their commands: `mypack:main/__anon/77186eb6`. Two anonymous functions with identical commands
-share one file.
+Functions written inline, like `() => { ... }`, get a generated name such as
+`mypack:main/__anon/77186eb6`. It stays the same as long as the function's commands do.
 
 ```ts
 $.execute.at("@p").run(() => {
@@ -95,27 +103,18 @@ $.execute.at("@p").run(() => {
 // execute at @p run function mypack:main/__anon/77186eb6
 ```
 
-A `run` callback that emits exactly one command is inlined instead:
+## Generating commands
 
-```ts
-$.execute.as("@a").run(() => $.say("hi")); // execute as @a run say hi
-```
-
-## Parameterizing with JavaScript
-
-Since functions are JavaScript, you can generate them:
+Since it's JavaScript, you can build commands from data:
 
 ```ts
 const colors = ["red", "green", "blue"] as const;
 
 /** @load */
 export function SetupTeams() {
-  for (const c of colors) {
-    $.team.add(c);
-    $.team.modify(c).color(c);
+  for (const color of colors) {
+    $.team.add(color);
+    $.team.modify(color).color(color);
   }
 }
 ```
-
-For values only known in game (scores, storage), use Minecraft's own features: scoreboards,
-`execute store` and `execute if`. Anything the library doesn't cover can be written as-is with [`$(...)`](/guides/raw-content/#raw-commands).

@@ -3,7 +3,7 @@ title: mcjspacker2
 description: Write Minecraft data packs in TypeScript, with a command library generated from the game itself.
 template: splash
 hero:
-  tagline: Write Minecraft data packs in TypeScript. Every command, argument and registry id is typed for the exact version you target, because the library is generated from that version's own datagen.
+  tagline: Write Minecraft data packs in TypeScript, with autocomplete and error checking for every command of the exact Minecraft version you target.
   actions:
     - text: Get started
       link: /getting-started/
@@ -33,8 +33,8 @@ function Cleanup() {
 
 <CardGrid>
   <Card title="Generated from the game" icon="seti:json">
-    `mcjs2 gen` runs Minecraft's datagen and turns its command tree into `$`, typed node by node,
-    so it always matches your version, snapshots and April Fools versions included.
+    The commands come straight from your Minecraft version, so they always match it, snapshots and
+    April Fools versions included. Type `$.` and your editor shows them all.
   </Card>
   <Card title="Functions are files" icon="document">
     Each TypeScript function becomes an `.mcfunction`, named after its file and function name.

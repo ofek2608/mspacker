@@ -67,8 +67,15 @@ $.setblock("0 1", "stone");
 $.setblock("0 ~1 ^", "stone");
 // @ts-expect-error positions are strings, not arrays
 $.setblock([0, 1, 2], "stone");
+// String arguments as properties
+$.scoreboard.players.set("@s").kills(5);
+$.tp["@a"]("1 2 3");
 // @ts-expect-error unknown subcommand
 $.execute.sideways;
+// @ts-expect-error unknown command (the root takes no arguments as properties)
+$.sya;
+// @ts-expect-error not a position
+$.setblock.nope;
 // @ts-expect-error literals are properties, not string arguments
 $.effect("give", "@s", "speed");
 `,

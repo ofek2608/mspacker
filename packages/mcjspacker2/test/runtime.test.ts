@@ -371,6 +371,34 @@ describe("$ proxy", () => {
     expect(() => build()).toThrow(/Unknown subcommand "sideways" after "execute as @a"/);
   });
 
+  it("accepts string arguments as properties", () => {
+    expect(
+      main(function Main() {
+        $.scoreboard.players.set("@s").kills(5);
+        $.tp["@a"]["1 2 3"];
+        $.function["pk:other"];
+      }),
+    ).toBe("scoreboard players set @s kills 5\ntp @a 1 2 3\nfunction pk:other\n");
+  });
+
+  it("keeps the root strict: properties there must be commands", () => {
+    function Main() {
+      $.sya("x");
+    }
+    meta(Main, { file: "main.ts", name: "Main", mcfunction: true });
+    expect(() => build()).toThrow(/Unknown command "sya"/);
+  });
+
+  it("never treats probed names as argument values", () => {
+    function Main() {
+      const chain = $.scoreboard.players.set("@s");
+      expect((chain as any).then).toBeUndefined();
+      chain.kills(1);
+    }
+    meta(Main, { file: "main.ts", name: "Main", mcfunction: true });
+    expect(build()["data/pk/function/gen/main/main.mcfunction"]).toBe("scoreboard players set @s kills 1\n");
+  });
+
   it("lets tools probe chains without starting commands", async () => {
     function Main() {
       const chain = $.execute.as("@a").run.say("x");

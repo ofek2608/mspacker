@@ -184,7 +184,15 @@ export function generate(
 
     const name = names.get(node)!;
     const doc = node === root ? "/** Every command of this version. */\nexport " : `/** \`${syntax}\` */\n`;
-    return `${doc}interface ${name} {\n${lines.join("\n")}\n}`;
+    // String arguments also work as properties: `$.team.modify.red` == `$.team.modify("red")`.
+    const propArgs = Object.entries(node.c ?? {})
+      .filter(([, child]) => !child.l)
+      .map(([key, child]) => `PropArg<${argType(child)}, ${typeOf(child, join(syntax, `<${key}>`))}>`);
+    if (!propArgs.length) return `${doc}interface ${name} {\n${lines.join("\n")}\n}`;
+    return (
+      `interface ${name}$ {\n${lines.join("\n")}\n}\n` +
+      `${doc}type ${name} = ${name}$ & ${[...new Set(propArgs)].join(" & ")};`
+    );
   }
 
   const out: string[] = [];
@@ -205,6 +213,8 @@ export function generate(
     `import { tree } from "./tree.js";\n\n` +
     TYPE_ALIASES +
     "\n\n" +
+    "/** A string argument written as a property: `.red` for `(\"red\")`. */\n" +
+    "type PropArg<T, Next> = { readonly [K in Extract<T, string>]: Next };\n\n" +
     "/**\n" +
     " * Every command, as a chain: literals are properties, arguments are calls.\n" +
     " *\n" +

@@ -28,7 +28,8 @@ The setup asks for:
 - **Description**: shown in the in-game pack list.
 
 It then installs dependencies and offers to generate the command library. Generating downloads the
-official server jar for your version (about 50 MB, cached once per version) and runs its datagen.
+official server jar for your version (about 50 MB, downloaded once per version) and reads its
+commands from it.
 
 To skip the questions, pass the answers as flags:
 

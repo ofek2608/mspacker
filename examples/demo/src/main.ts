@@ -3,7 +3,7 @@ import { StartRound } from "./combat/arena.js";
 
 /** @load */
 export function Init() {
-  $.scoreboard.objectives.add("kills", "playerKillCount");
+  $.scoreboard.objectives.add.kills.playerKillCount;
   $.say("Demo pack loaded!");
 }
 

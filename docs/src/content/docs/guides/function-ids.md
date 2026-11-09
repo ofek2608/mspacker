@@ -1,61 +1,44 @@
 ---
-title: Function ids
-description: How mcjspacker2 names your functions, and how to override it.
+title: Function names
+description: How your functions are named in game, and how to choose a name.
 ---
 
-## The rule
+A function's name in game comes from its namespace, its file and its name:
 
-A function's id is built from the namespace, the file path and the function name:
-
-```
-<namespace>:<prefix><file path without extension>/<function name>
-```
-
-Every path segment and the name go through the same conversion: an `_` is inserted before each
-capital letter except the first, then everything is lowercased.
-
-| Source | Id (namespace `mypack`) |
+| File and function | Name in game (namespace `mypack`) |
 |---|---|
-| `src/main.ts` → `function Init` | `mypack:main/init` |
-| `src/combat/Arena.ts` → `function StartRound` | `mypack:combat/arena/start_round` |
-| `src/ui/sidebar.ts` → `function showTopKills` | `mypack:ui/sidebar/show_top_kills` |
+| `src/main.ts`, `function Init` | `mypack:main/init` |
+| `src/combat/Arena.ts`, `function StartRound` | `mypack:combat/arena/start_round` |
+| `src/ui/sidebar.ts`, `function showTopKills` | `mypack:ui/sidebar/show_top_kills` |
 
-The conversion is literal, so `HTTPGet` becomes `h_t_t_p_get`. Rename or
-[override](#overriding-the-id) functions where that reads badly.
+Capital letters become lowercase with an `_` before them (except the first letter). That's done
+letter by letter, so `HTTPGet` becomes `h_t_t_p_get`. Rename the function, or
+[choose a name](#choosing-a-name), if that doesn't read well.
 
-## Prefix
+## A folder for everything
 
-The namespace setting can include a path prefix. All generated functions go under it, which keeps
-them apart from hand-written files in [`datapack/`](/guides/raw-content/):
+The [namespace](/reference/configuration/#namespace) can include a folder, which keeps your
+TypeScript functions apart from hand-written ones:
 
 ```ts
 namespace: "mypack:generated/",
-// src/main.ts → Init  =>  mypack:generated/main/init
+// src/main.ts, Init  →  mypack:generated/main/init
 ```
 
-## Overriding the id
+## Choosing a name
 
-Give `@mcfunction` an id:
+Write the name after `@mcfunction`:
 
 ```ts
 /** @mcfunction custom/renamed */
-export function WeirdName() {} // mypack:generated/custom/renamed  (relative: under the prefix)
+export function WeirdName() {}   // mypack:custom/renamed
 
 /** @mcfunction other:api/run */
-export function Api() {}      // other:api/run  (absolute: has a namespace)
+export function Api() {}         // other:api/run
 ```
 
-## Anonymous functions
+A name without a namespace goes into your namespace (and folder, if you set one).
 
-Names that can't be converted to a valid id, `default` exports and unnamed arrows become anonymous:
+## Two functions with the same name
 
-```
-<namespace>:<prefix><file path>/__anon/<8-character hash of the commands>
-```
-
-The hash only depends on the commands, so ids stay the same between builds as long as the body
-does, and identical bodies are shared.
-
-## Duplicates
-
-Two functions that end up with the same id are a build error that names both sources.
+If two functions end up with the same name, the build stops and tells you where both are.

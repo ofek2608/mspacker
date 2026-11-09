@@ -1,6 +1,6 @@
 ---
-title: Raw content
-description: Tags, JSON resources, hand-written files and raw command lines.
+title: Tags, files and text commands
+description: Tags, advancements and other data pack files, hand-written functions, and commands written as text.
 ---
 
 ## The `datapack/` directory
@@ -16,8 +16,8 @@ datapack/
   data/minecraft/tags/function/load.json
 ```
 
-When a tag file exists both in `datapack/` and in the generated output (for example
-`minecraft:load`, which `@load` writes to), the two are merged. Dotfiles are skipped.
+Tags you write here are combined with the ones mcjspacker2 creates, so a `load.json` here and
+`@load` functions work together.
 
 Use the folder names of your version: before 1.21 (pack format 45) they are plural, like
 `functions/` and `tags/functions/`.
@@ -33,9 +33,9 @@ tag("function", "mypack:all", [Main], { replace: true });
 ```
 
 The first argument is the folder under `tags/`: `function`, `block`, `item`, `entity_type`, ...
-Functions in a tag are emitted even without an `@mcfunction` tag.
+Functions in a tag are written even without `@mcfunction`.
 
-## JSON resources
+## Advancements, predicates and other files
 
 ```ts
 import { resource } from "#mc";
@@ -49,33 +49,32 @@ resource("advancement", "mypack:root", {
 The first argument is the folder under `data/<namespace>/`: `advancement`, `predicate`,
 `loot_table`, `recipe`, `item_modifier`, ...
 
-`tag` and `resource` can be called at the top level of a module or inside a function.
+`tag` and `resource` can be used anywhere in a file, inside or outside functions.
 
-## Raw commands
+## Commands as text
 
-Calling `$` writes a line into the current function as-is. Use it for commands or syntax the
-library doesn't cover, such as macro lines:
+Calling `$` writes a command exactly as you give it. Use it for anything mcjspacker2 doesn't cover,
+or for macro lines:
 
 ```ts
-import { $, fnId } from "#mc";
+import { $ } from "#mc";
 
 /** @mcfunction */
 export function Main() {
-  $("say this line is copied verbatim");
-  $("$tp @s $(x) $(y) $(z)");               // macro line
-  $`schedule function ${Tick} 1s`;           // template literal: functions become their ids
-  $(`schedule function ${fnId(Tick)} 1s`);   // the same, with fnId
-  $(Helper);                                 // function mypack:main/helper
+  $("say this line is copied as-is");
+  $("$tp @s $(x) $(y) $(z)");          // macro line
+  $`schedule function ${Tick} 1s`;      // functions become their names
+  $(Helper);                            // function mypack:main/helper
 }
 ```
 
-A template literal passed straight to `$` (no parentheses) interpolates functions as their ids. In
-a plain string, use `fnId(fn)`, which returns a function's id and emits the function.
+Written with backticks right after `$` (no parentheses), functions inside `${...}` become their
+names. Inside a normal string, use `fnId(Tick)` to get a function's name.
 
-## NBT values
+## NBT
 
-Plain objects, arrays, strings, numbers and booleans become SNBT. For typed numbers and arrays,
-use `nbt`:
+Objects, arrays, strings, numbers and booleans are written as NBT. For numbers of a specific kind
+(`1b`, `5f`) and typed arrays, use `nbt`:
 
 ```ts
 import { $, nbt } from "#mc";
@@ -84,4 +83,4 @@ $.summon("pig", "~ ~ ~", { NoAI: nbt.byte(1), Health: nbt.float(5), UUID: nbt.in
 // summon pig ~ ~ ~ {NoAI:1b,Health:5f,UUID:[I;1,2,3,4]}
 ```
 
-`nbt.raw("...")` inserts SNBT text as-is.
+`nbt.raw("...")` writes NBT text as-is.

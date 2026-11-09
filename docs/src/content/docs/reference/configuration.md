@@ -49,7 +49,7 @@ TypeScript source directory. Default `"src"`.
 
 ### `raw`
 
-Directory copied into the pack as-is. Default `"datapack"`. See [raw content](/guides/raw-content/).
+Directory copied into the pack as-is. Default `"datapack"`. See [tags and files](/guides/raw-content/).
 
 ### `outDir`
 
@@ -79,7 +79,8 @@ overrides it. Default: the OS's standard location. Server jars are never taken f
 
 ### `parsers`
 
-Add or change argument types. See [custom parsers](/reference/custom-parsers/).
+Advanced: describe values a new Minecraft version added or changed. See
+[new value types](/reference/custom-parsers/).
 
 ## Environment variables
 

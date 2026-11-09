@@ -31,10 +31,10 @@ Adds mcjspacker2 to the current directory: `mcjs2.config.ts`, the `#mc` import a
 mcjs2 gen [--force]
 ```
 
-Runs Minecraft's datagen (`--reports`) on the server jar for `version` and generates the typed
-library into `.mcjs2/gen`. Reports are cached in `~/.cache/mcjspacker2/<version>/<jar sha1>`;
-`--force` runs datagen again. Prints a warning for argument types it doesn't know, which fall back to
-`string` (see [custom parsers](/reference/custom-parsers/)).
+Reads the commands of your Minecraft `version` from its server jar and writes them into
+`.mcjs2/gen`, where `$` comes from. Run it again after changing `version`. The result is cached, so
+it's quick after the first time; `--force` reads the jar again. If the version has kinds of values
+mcjspacker2 doesn't know yet, it says so (see [new value types](/reference/custom-parsers/)).
 
 ### `mcjs2 build`
 

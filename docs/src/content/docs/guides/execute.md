@@ -1,10 +1,9 @@
 ---
 title: Execute
-description: Chaining execute subcommands.
+description: Run commands as other entities, at other places, or only when something is true.
 ---
 
-`execute` is a chain like any other command: its subcommands lead back to `execute`, and `run`
-leads back to `$`, so whatever follows `run` is a whole command:
+`execute` works like in Minecraft: chain what you need, then end with `run` and the command to run:
 
 ```ts
 $.execute.as("@a").at("@s").run.say("hi");
@@ -13,38 +12,44 @@ $.execute.as("@a").at("@s").run.say("hi");
 $.execute.as("@e[type=zombie]").if.block("~ ~-1 ~", "sand").run.kill("@s");
 // execute as @e[type=zombie] if block ~ ~-1 ~ sand run kill @s
 
+$.execute.if.score("@s", "kills").matches("10..").run.give("@s", "diamond", 1);
+// execute if score @s kills matches 10.. run give @s diamond 1
+```
+
+Anything can follow `run`, including another `execute`.
+
+## Running several commands
+
+Give `run` a function to run several commands. If the function only has one command, it's written
+in place; otherwise mcjspacker2 creates a function file for it:
+
+```ts
+$.execute.as("@a").run(() => $.say("hi"));
+// execute as @a run say hi
+
+$.execute.as("@a").at("@s").run(() => {
+  $.particle("heart", "~ ~2 ~");
+  $.playsound("entity.player.levelup").master("@s");
+});
+// execute as @a at @s run function mypack:main/__anon/3f2a9c1d
+
+$.execute.as("@a").run(Reward);
+// execute as @a run function mypack:main/reward
+```
+
+## Without `run`
+
+Some `execute` commands are complete without `run`, like checking a condition and storing the
+result:
+
+```ts
 $.execute.store.result.score("#pigs", "count").if.entity("@e[type=pig]");
 // execute store result score #pigs count if entity @e[type=pig]
 ```
 
-The same goes for anything else that ends in `run`, like `$.return.run.function(Helper)`.
+## Checking a function
 
-## Running more than one command
-
-`run` is `$`, so it can also be called. That's how you run several commands, a function, or
-raw text:
-
-| Code | Output |
-|---|---|
-| `.run.say("hi")` | `run say hi` |
-| `.run(() => $.say("hi"))` | `run say hi` (a callback with one command is inlined) |
-| `.run(() => { $.say("a"); $.say("b"); })` | `run function <anonymous id>` |
-| `.run(Helper)` | `run function mypack:main/helper` |
-| `.run("say hi")` | `run say hi` |
-
-Callbacks run right away, while the surrounding function is being recorded, so they see your
-variables as they are at that point.
-
-## Conditions
-
-A chain without `run` is a complete command when Minecraft allows it, which is useful with `store`:
-
-```ts
-$.execute.if.entity("@e[type=pig]");
-```
-
-`.if.function(fn)` takes a function, a function id or a `#tag`, like `$.function()`. The function
-is emitted and its id is used. It passes when the function returns a non-zero value:
+`if.function` runs a function and continues when it returns a value other than 0:
 
 ```ts
 function HasPlayers() {
@@ -54,3 +59,5 @@ function HasPlayers() {
 
 $.execute.if.function(HasPlayers).run.say("someone is online");
 ```
+
+`return` needs Minecraft 1.20.3 or newer.

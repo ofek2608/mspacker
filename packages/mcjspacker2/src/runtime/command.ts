@@ -4,6 +4,7 @@
  *   $.Execute.As("@a").At("@s").Run.Say("hi")    ->  execute as @a at @s run say hi
  *
  * - Property access follows a literal child (`Execute`, `As`).
+ * - A property that isn't a literal is a string argument: `$.team.modify.red` == `$.team.modify("red")`.
  * - A call consumes argument children, one per value: `Give("@s")("diamond", 3)` is the same as
  *   `Give("@s", "diamond", 3)`. Sibling arguments (`tp <targets>` vs `tp <location>`) are tracked as
  *   candidates until the values decide.
@@ -188,24 +189,49 @@ export function createRoot(root: TreeNode): unknown {
     return next;
   };
 
+  /** Candidates after consuming `value` as an argument; `error` is the first serialize failure. */
+  const consumeArg = (cands: Candidate[], value: unknown) => {
+    const ctx = getState().ctx;
+    const next: Candidate[] = [];
+    let error: unknown;
+    for (const c of cands) {
+      if (c.done) continue;
+      const src = continuation(root, c.node);
+      for (const child of Object.values(src.c ?? {})) {
+        if (child.l) continue;
+        const def = parserDef(child.p ?? "");
+        if (!def.test(value, child.o, ctx)) continue;
+        try {
+          next.push({ node: child, parts: [...c.parts, def.serialize(value, child.o, ctx)] });
+        } catch (e) {
+          error ??= e;
+        }
+      }
+    }
+    return { next, error };
+  };
+
   const proxyFor = (st: ChainState): unknown =>
     new Proxy(function command() {}, {
       get(target, prop, receiver) {
-        if (typeof prop === "string") {
-          const cands: Candidate[] = [];
-          for (const c of st.cands) {
-            if (c.done) continue;
-            const src = continuation(root, c.node);
-            const key = literalsOf(src).get(prop);
-            if (key !== undefined) cands.push({ node: src.c![key]!, parts: [...c.parts, key] });
-          }
-          if (cands.length) return proxyFor(advance(st, cands));
-          if (!PROBED.has(prop)) {
-            const at = st.slot ? `after "${text(st.cands[0]!)}"` : "";
-            throw new Error(`Unknown ${st.slot ? "subcommand" : "command"} "${prop}" ${at}`.trim() + ".");
-          }
+        if (typeof prop !== "string") return Reflect.get(target, prop, receiver);
+        // A literal (`.collision_rule`), else a string argument (`.red` == `("red")`). Both stay
+        // candidates when both match, literal first.
+        const cands: Candidate[] = [];
+        for (const c of st.cands) {
+          if (c.done) continue;
+          const src = continuation(root, c.node);
+          const key = literalsOf(src).get(prop);
+          if (key !== undefined) cands.push({ node: src.c![key]!, parts: [...c.parts, key] });
         }
-        return Reflect.get(target, prop, receiver);
+        // Names tools probe (`then`, `toJSON`, ...) are never argument values, or every chain would be a thenable.
+        if (PROBED.has(prop)) return cands.length ? proxyFor(advance(st, cands)) : Reflect.get(target, prop, receiver);
+        const { next, error } = consumeArg(st.cands, prop);
+        cands.push(...next);
+        if (cands.length) return proxyFor(advance(st, cands));
+        if (error) throw error;
+        const at = st.slot ? `after "${text(st.cands[0]!)}"` : "";
+        throw new Error(`Unknown ${st.slot ? "subcommand" : "command"} "${prop}" ${at}`.trim() + ".");
       },
       apply(_target, _this, args: unknown[]) {
         if (atRoot(st)) {
@@ -213,24 +239,9 @@ export function createRoot(root: TreeNode): unknown {
           if (!st.slot) return void emitLine(line); // `$("...")`: a line of its own
           return void advance(st, st.cands.map((c) => ({ node: c.node, parts: [...c.parts, line], done: true as const })));
         }
-        const ctx = getState().ctx;
         let cands = st.cands.filter((c) => !c.done);
         for (const value of args) {
-          const next: Candidate[] = [];
-          let error: unknown;
-          for (const c of cands) {
-            const src = continuation(root, c.node);
-            for (const child of Object.values(src.c ?? {})) {
-              if (child.l) continue;
-              const def = parserDef(child.p ?? "");
-              if (!def.test(value, child.o, ctx)) continue;
-              try {
-                next.push({ node: child, parts: [...c.parts, def.serialize(value, child.o, ctx)] });
-              } catch (e) {
-                error ??= e;
-              }
-            }
-          }
+          const { next, error } = consumeArg(cands, value);
           if (!next.length) {
             if (error) throw error;
             throw new Error(`No syntax of "${text(st.cands[0]!)}" matches arguments (${args.map(formatArg).join(", ")}).`);

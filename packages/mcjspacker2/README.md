@@ -19,7 +19,8 @@ function Helper() { $.say("helper"); }   // emitted because StartRound reference
 
 Commands are a chain on `$`: literal words are properties, in snake_case as Minecraft writes them
 (`$.scoreboard.players`, `$.gamerule.keep_inventory`, `$.function`), arguments are calls
-(`set("@s", "kills", 0)`, or split: `set("@s")("kills", 0)`). `run` leads back to `$`. Each `$.`
+(`set("@s", "kills", 0)`, or split: `set("@s")("kills", 0)`). String arguments can also be properties:
+`$.team.modify.red.collision_rule.never`. `run` leads back to `$`. Each `$.`
 starts a line, which must be a complete command when the function ends.
 
 Full documentation: the Starlight site in [`docs/`](../../docs) (`pnpm docs` from the repo root).

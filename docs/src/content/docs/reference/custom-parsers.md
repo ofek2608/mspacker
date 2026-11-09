@@ -1,10 +1,17 @@
 ---
-title: Custom parsers
-description: Add or change argument types for versions mcjspacker2 doesn't know yet.
+title: New value types
+description: Advanced. Teach mcjspacker2 about values that a new Minecraft version added or changed.
 ---
 
-When a new Minecraft version adds an argument type, or changes the format of an existing one, you
-don't have to wait for a mcjspacker2 update. Define the parser in your config:
+:::note
+This page is for when Minecraft releases something mcjspacker2 doesn't know yet. You won't need it
+for normal use.
+:::
+
+Every kind of value in a command has an id, like `minecraft:particle` or `minecraft:vec3`. When a
+new Minecraft version adds a kind of value, `mcjs2 gen` warns about it and lets you pass any string
+there. When a version changes how a value is written, the output may be wrong for it. In both
+cases you can describe the value in your config instead of waiting for an update:
 
 ```ts
 import { defineConfig, defineParser } from "mcjspacker2";
@@ -38,9 +45,9 @@ for unknown parsers.
 | Field | Used by | |
 |---|---|---|
 | `type` | `mcjs2 gen` | The TypeScript type in generated signatures, as source text. Can use any type exported from `#mc`. Run `mcjs2 gen` again after changing it. |
-| `test(value, props, ctx)` | build | Whether a value fits this argument. Used to pick between sibling syntaxes (`tp <targets>` vs `tp <location>`), so keep it as strict as you can. |
+| `test(value, props, ctx)` | build | Whether a value fits. When a command accepts different kinds of values at the same spot (a player or a position in `tp`), this decides which one was meant, so keep it strict. |
 | `serialize(value, props, ctx)` | build | The command text for a value. |
-| `examples` | probe | Values the [version probe](/reference/versions/#parser-probe) uses to test this parser on a real server. |
+| `examples` | tests | Sample values mcjspacker2's own version tests use on a real server. |
 
 `type` and `examples` can be a value or a function of `(props, ctx)`.
 
