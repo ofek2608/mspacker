@@ -1,0 +1,43 @@
+{
+  "name": "mcjspacker2",
+  "version": "0.1.0",
+  "description": "Write Minecraft datapacks in TypeScript with a command library generated from the game's own datagen.",
+  "type": "module",
+  "bin": {
+    "mcjs2": "./bin/mcjs2.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./runtime": {
+      "types": "./dist/runtime/index.d.ts",
+      "default": "./dist/runtime/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "bin"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@babel/parser": "^8.1.0",
+    "cac": "^7.1.0",
+    "chokidar": "^6.0.0",
+    "esbuild": "^0.28.2",
+    "fflate": "^0.8.3"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.0"
+  }
+}

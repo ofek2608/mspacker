@@ -1,0 +1,20 @@
+{
+  "name": "demo",
+  "private": true,
+  "type": "module",
+  "imports": {
+    "#mc": "./.mcjs2/gen/index.ts"
+  },
+  "scripts": {
+    "gen": "mcjs2 gen",
+    "build": "mcjs2 build",
+    "dev": "mcjs2 dev",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "mcjspacker2": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2"
+  }
+}

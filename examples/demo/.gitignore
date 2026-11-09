@@ -1,0 +1,4 @@
+.mcjs2/
+dist/
+node_modules/
+server/

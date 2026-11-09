@@ -1,0 +1,5 @@
+node_modules/
+dist/
+# version matrix work dirs (downloaded jars, test servers, generated projects)
+.matrix/
+*.tsbuildinfo
