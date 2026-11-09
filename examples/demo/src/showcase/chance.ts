@@ -1,5 +1,5 @@
 // Chance: flip 20 coins again and again; the histogram of heads grows into the binomial bell curve.
-import { $, type Macro } from "#mc";
+import { $, macro, type Macro } from "#mc";
 import { add, div, intIn, mul, STORAGE, stored, toFloat } from "../math/expr.js";
 import { CoinFlips, RollDice } from "../math/combinatorics.js";
 import { onlyIf, setInt } from "../math/io.js";
@@ -26,7 +26,7 @@ export function buildChance() {
 
 /** Count one result k: bump counts[k] and grow bar k. */
 function Count(args: Macro<{ k: number }>) {
-  const path = `showcase.coins.counts[${args.k}]`;
+  const path = macro`showcase.coins.counts[${args.k}]`;
   $.data.modify.storage(STORAGE, path).set.compute.default.integer(add(at(path), 1));
 }
 

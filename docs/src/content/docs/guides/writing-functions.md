@@ -140,10 +140,10 @@ To give each call its own value, use a `const` or a `for (let ...)` loop variabl
 
 ## Functions without a name
 
-Functions written inline, like `() => { ... }`, get a generated name such as
-`mypack:main/__anon/77186eb6`. The name is the same on every build, but it can change whenever the
-function changes (or with a new mcjspacker2 version), so don't use it from outside your pack. Give
-the function a name if something else needs to call it.
+Functions written inline, like `() => { ... }`, and functions declared inside another function get
+a generated name such as `mypack:main/__anon/77186eb6`. The name is the same on every build, but it
+can change whenever the function changes (or with a new mcjspacker2 version), so don't use it from
+outside your pack. Declare the function at the top of a file if something else needs to call it.
 
 ```ts
 $.execute.at("@p").run.function(() => {

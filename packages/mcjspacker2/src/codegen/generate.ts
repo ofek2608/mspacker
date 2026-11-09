@@ -120,8 +120,8 @@ export function generate(
 
     if (node === root) {
       lines.push(
-        "  /** A command line as-is: `$(\"say hi\")`, or a macro line: `$(\"$say $(message)\")`. */",
-        "  (command: string): void;",
+        "  /** A command line as-is: `$(\"say hi\")`, or built from macro arguments: `$(macro`say ${args.message}`)`. */",
+        "  (command: string | R.MacroArg<unknown>): void;",
       );
     } else if (node.x) {
       lines.push(`  /** \`${syntax}\` */`, `  (): ${names.get(node)};`);
@@ -216,8 +216,8 @@ export function generate(
     `import { tree } from "./tree.js";\n\n` +
     usedTypeAliases(out.join("\n")) +
     "\n\n" +
-    "/** A value, or a macro argument of a fitting type. */\n" +
-    "type Arg<T> = T | R.MacroArg<T>;\n\n" +
+    "/** A value where anything, also inside objects and lists, may be a macro argument of a fitting type. */\n" +
+    "type Arg<T> = R.MacroValue<T>;\n\n" +
     "/** A string argument written as a property: `.red` for `(\"red\")`. */\n" +
     "type PropArg<T, Next> = { readonly [K in Extract<T, string>]: Next };\n\n" +
     "/** Names every JavaScript function has, so they can't be values written as properties. */\n" +

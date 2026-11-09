@@ -42,3 +42,21 @@ A name without a namespace goes into your namespace (and folder, if you set one)
 ## Two functions with the same name
 
 If two functions end up with the same name, the build stops and tells you where both are.
+
+## Your namespace in code
+
+To write ids without repeating your namespace:
+
+```ts
+import { $, __FUNCTION_PREFIX__, __NAMESPACE__, id } from "#mc";
+
+/** @mcfunction */
+export function Setup() {
+  $.say(`this pack is ${__NAMESPACE__}`);        // mypack
+  $.say(`functions start with ${__FUNCTION_PREFIX__}`); // mypack: (or mypack:generated/ with a folder)
+  $.schedule.function(id("timers/tick"), "1s");   // mypack:timers/tick
+}
+```
+
+`id` also works with [macro arguments](/guides/macros/): `` id(macro`rewards/${args.kind}`) `` is
+`mypack:rewards/$(kind)`.

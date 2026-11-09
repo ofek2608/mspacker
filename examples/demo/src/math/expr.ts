@@ -6,6 +6,8 @@
 import type { MacroArg, NbtCompound } from "#mc";
 
 export type Num = number | NbtCompound | MacroArg<number>;
+/** A storage path; build one with macro arguments using `` macro`m[${args.i}]` ``. */
+export type Path = string | MacroArg<any>;
 
 /** The storage every math function reads from and writes to. */
 export const STORAGE = "demo:math";
@@ -49,8 +51,9 @@ export const uniform = (min: Num, max: Num) => op("uniform", { min, max });
 export const binomial = (n: Num, p: Num) => op("binomial", { n, p });
 
 /** A number in storage (`demo:math <path>`), or `fallback` if it's missing. */
-export const stored = (path: string, fallback?: Num) =>
-  op("storage", { storage: STORAGE, path, ...(fallback === undefined ? {} : { fallback }) });
+export const stored = (path: Path, fallback?: Num) =>
+  // Inside NBT a macro argument is written as-is, so a path built with macro`...` needs its quotes.
+  op("storage", { storage: STORAGE, path: typeof path === "string" ? path : path.quoted, ...(fallback === undefined ? {} : { fallback }) });
 /** A score (of the `math` objective by default). */
 export const score = (holder: string, objective = OBJECTIVE) =>
   op("score", { target: { type: "minecraft:fixed", name: holder }, score: objective });

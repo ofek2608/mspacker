@@ -46,7 +46,7 @@ describe("generate", () => {
       for (const [name, content] of Object.entries(result.files)) writeFileSync(join(gen, name), content);
       writeFileSync(
         join(dir, "use.ts"),
-        `import { $, fnId } from "./gen/index.js";
+        `import { $, fnId, macro, type Macro, type Selector } from "./gen/index.js";
 export function Main() {
   $.tp("@a", "0 ~1 ~2");
   $.tp("@a")("^ ^1 ^2");
@@ -80,6 +80,19 @@ $.sya;
 $.setblock.nope;
 // @ts-expect-error literals are properties, not string arguments
 $.effect("give", "@s", "speed");
+// Macro arguments: typed where they're used, also inside objects; macro\`...\` text fits anywhere.
+export function WithArgs(args: Macro<{ who: Selector; n: number; name: string; pos: string }>) {
+  $.tp(args.who, "0 0 0");
+  $.tellraw(args.who, { text: args.name, extra: [{ text: args.name.quoted }] });
+  $.setblock(macro\`\${args.n} 64 \${args.n}\`, "stone");
+  $(macro\`say \${args.name}\`);
+  // @ts-expect-error a number doesn't fit a selector
+  $.tp(args.n, "0 0 0");
+  // @ts-expect-error a string doesn't fit a position
+  $.setblock(args.pos, "stone");
+  // @ts-expect-error a number doesn't fit a text field
+  $.tellraw(args.who, { text: args.n });
+}
 `,
       );
       writeFileSync(

@@ -7,9 +7,9 @@
 // The helpers below (lowercase) write the commands for one operation on registers chosen at build
 // time; sizes are read in game. The exported functions at the bottom are the in-game calculator:
 // they work on registers A, B, C (matrices) and U, V, W (vectors).
-import { $, nbt, type Macro, type MacroArg } from "#mc";
+import { $, macro, nbt, type Macro, type MacroArg } from "#mc";
 import {
-  abs, add, div, floatIn, floorDiv, floorMod, intIn, max, mul, neg, not, sqrt, STORAGE, stored, sub, when, type Condition, type Num,
+  abs, add, div, floatIn, floorDiv, floorMod, intIn, max, mul, neg, not, sqrt, STORAGE, stored, sub, when, type Condition, type Num, type Path,
 } from "./expr.js";
 import { forLoop, onlyIf, setFloat, setInt } from "./io.js";
 
@@ -21,10 +21,10 @@ const rows = (r: string) => stored(`${mat(r)}.rows`);
 const cols = (r: string) => stored(`${mat(r)}.cols`);
 const size = (v: string) => stored(`${vec(v)}.n`);
 /** Path of a matrix cell. */
-const cell = (r: string, i: Index, j: Index) => `${mat(r)}.m[${i}][${j}]`;
+const cell = (r: string, i: Index, j: Index) => macro`${mat(r)}.m[${i}][${j}]`;
 /** Path of a vector entry. */
-const entry = (v: string, i: Index) => `${vec(v)}.v[${i}]`;
-const at = (path: string) => stored(path);
+const entry = (v: string, i: Index) => macro`${vec(v)}.v[${i}]`;
+const at = (path: Path) => stored(path);
 
 const eq = (a: Num, b: Num): Condition => intIn(sub(a, b), { min: 0, max: 0 });
 /** Pivots smaller than this count as zero (floats in game have about 7 digits). */
@@ -200,9 +200,9 @@ const swaps = new Map<string, (args: Macro<{ k: number; p: number }>) => void>()
 function swapRows(r: string) {
   if (!swaps.has(r)) {
     swaps.set(r, (args: Macro<{ k: number; p: number }>) => {
-      $.data.modify.storage(STORAGE, "linalg.row").set.from.storage(STORAGE, `${mat(r)}.m[${args.k}]`);
-      $.data.modify.storage(STORAGE, `${mat(r)}.m[${args.k}]`).set.from.storage(STORAGE, `${mat(r)}.m[${args.p}]`);
-      $.data.modify.storage(STORAGE, `${mat(r)}.m[${args.p}]`).set.from.storage(STORAGE, "linalg.row");
+      $.data.modify.storage(STORAGE, "linalg.row").set.from.storage(STORAGE, macro`${mat(r)}.m[${args.k}]`);
+      $.data.modify.storage(STORAGE, macro`${mat(r)}.m[${args.k}]`).set.from.storage(STORAGE, macro`${mat(r)}.m[${args.p}]`);
+      $.data.modify.storage(STORAGE, macro`${mat(r)}.m[${args.p}]`).set.from.storage(STORAGE, "linalg.row");
     });
   }
   return swaps.get(r)!;

@@ -2,7 +2,8 @@ import { readFileSync } from "node:fs";
 import { beforeEach, describe, expect, it } from "vitest";
 import { compactTree } from "../src/codegen/generate.js";
 import { createRoot, literalName } from "../src/runtime/command.js";
-import { __DEV__, fnId, resource, tag } from "../src/runtime/index.js";
+import { __DEV__, __FUNCTION_PREFIX__, __NAMESPACE__, fnId, id, macro, resource, tag } from "../src/runtime/index.js";
+import { setParserOverrides } from "../src/runtime/parsers.js";
 import { parseNamespace } from "../src/runtime/naming.js";
 import { collectOutput, resetState, type FnMeta } from "../src/runtime/state.js";
 
@@ -542,7 +543,7 @@ describe("macro functions", () => {
       $.say("start");
       $.tp(args.target, args.pos);
       $.scoreboard.players.set(args.target, "obj", args.amount);
-      $(`tp @s ${args.destination}`);
+      $(macro`tp @s ${args.destination}`);
       $.tellraw("@a", { text: args.name.quoted, color: "red" });
       $.function("pk:other", { Count: args.amount, Name: args.name.quoted });
     }
@@ -575,7 +576,7 @@ describe("macro functions", () => {
 
   it("calls macro functions with arguments through the normal function command", () => {
     function Greet(args: any) {
-      $.say(`hi ${args.name}`);
+      $.say(macro`hi ${args.name}`);
     }
     function Main() {
       $.function(Greet, { name: "Steve" });
@@ -595,7 +596,83 @@ describe("macro functions", () => {
       $.function(() => $.say(args.name));
     }
     meta(Outer, { file: "main.ts", name: "Outer", mcfunction: true });
-    expect(() => build()).toThrow(/uses the macro argument "name" of another function.*pass it on/);
+    expect(() => build()).toThrow(/args\.name belongs to Outer.*but is used in <anonymous>.*pass it on/);
+  });
+
+  it("refuses to turn macro arguments into plain text", () => {
+    function Main(args: any) {
+      $(`tp @s ${args.x}`);
+    }
+    meta(Main, { file: "main.ts", name: "Main", mcfunction: true });
+    expect(() => build()).toThrow(/args\.x can't become plain text\. Use the macro template/);
+  });
+
+  it("never treats plain text as a macro, even with $(...) in it", () => {
+    function Main(args: any) {
+      $.say("costs $(price)");
+      $.say(args.price);
+    }
+    meta(Main, { file: "main.ts", name: "Main", mcfunction: true });
+    expect(build()["data/pk/function/gen/main/main.mcfunction"]).toBe("say costs $(price)\n$say $(price)\n");
+  });
+
+  it("builds text with macro`...`, usable anywhere a value goes", () => {
+    function Main(args: any) {
+      $.tp("@s", macro`${args.x} ${args.y} ${args.z}`);
+      $.execute.as(macro`@e[tag=${args.tag},limit=1]`).run.say("hi");
+      $.tellraw("@a", { text: macro`"Hello ${args.name}!"`, extra: [{ text: args.who.quoted }] });
+      $(macro`say ${args.name} and ${5}`);
+      $(macro`say no arguments`);
+    }
+    meta(Main, { file: "main.ts", name: "Main", mcfunction: true });
+    expect(build()["data/pk/function/gen/main/main.mcfunction"]).toBe(
+      [
+        "$tp @s $(x) $(y) $(z)",
+        "$execute as @e[tag=$(tag),limit=1] run say hi",
+        '$tellraw @a {text:"Hello $(name)!",extra:[{text:"$(who)"}]}',
+        "$say $(name) and 5",
+        "say no arguments",
+        "",
+      ].join("\n"),
+    );
+  });
+
+  it("rejects macro`...` mixing arguments of two functions", () => {
+    let outer: any;
+    function Inner(args: any) {
+      $(macro`say ${args.a} ${outer.b}`);
+    }
+    function Outer(args: any) {
+      outer = args;
+      $.function(Inner, { a: 1 });
+    }
+    meta(Inner, { file: "main.ts", name: "Inner" });
+    meta(Outer, { file: "main.ts", name: "Outer", mcfunction: true });
+    expect(() => build()).toThrow(/mixes macro arguments of Inner .* and Outer/);
+  });
+
+  it("keeps macro arguments out of tags and resources", () => {
+    function Main(args: any) {
+      resource("advancement", "pk:adv", { rewards: { experience: args.xp } });
+    }
+    meta(Main, { file: "main.ts", name: "Main", mcfunction: true });
+    expect(() => build()).toThrow(/Macro arguments only work in commands, not in advancement "pk:adv"/);
+  });
+
+  it("lets argument types adapt macro arguments, except macro`...` text", () => {
+    setParserOverrides({ "brigadier:integer": { macro: (text) => `[${text}]` } });
+    try {
+      function Main(args: any) {
+        $.scoreboard.players.set("@s", "obj", args.n);
+        $.scoreboard.players.set("@s", "obj", macro`${args.n}`);
+      }
+      meta(Main, { file: "main.ts", name: "Main", mcfunction: true });
+      expect(build()["data/pk/function/gen/main/main.mcfunction"]).toBe(
+        "$scoreboard players set @s obj [$(n)]\n$scoreboard players set @s obj $(n)\n",
+      );
+    } finally {
+      setParserOverrides({});
+    }
   });
 
   it("rejects names the game doesn't accept and old versions", () => {
@@ -611,5 +688,28 @@ describe("macro functions", () => {
     }
     meta(Old, { file: "main.ts", name: "Old", mcfunction: true });
     expect(() => build(15)).toThrow(/Macros need Minecraft 1.20.2 or newer/);
+  });
+});
+
+describe("namespace values", () => {
+  it("knows the namespace and where function names start", () => {
+    expect(__NAMESPACE__).toBe("pk");
+    expect(__FUNCTION_PREFIX__).toBe("pk:gen/");
+    resetState(parseNamespace("other"));
+    expect(__NAMESPACE__).toBe("other");
+    expect(__FUNCTION_PREFIX__).toBe("other:");
+  });
+
+  it("makes ids in the namespace, also from macro arguments", () => {
+    expect(id("rewards/daily")).toBe("pk:rewards/daily");
+    function Main(args: any) {
+      $.function(id("helpers/x"));
+      $.function(id(macro`rewards/${args.kind}`));
+      $.function(id(args.name));
+    }
+    meta(Main, { file: "main.ts", name: "Main", mcfunction: true });
+    expect(build()["data/pk/function/gen/main/main.mcfunction"]).toBe(
+      "function pk:helpers/x\n$function pk:rewards/$(kind)\n$function pk:$(name)\n",
+    );
   });
 });

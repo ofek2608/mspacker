@@ -1,5 +1,5 @@
 // Primes: a sieve of Eratosthenes in storage, drawn as an Ulam spiral on the floor.
-import { $, type Macro } from "#mc";
+import { $, macro, type Macro } from "#mc";
 import { add, floorDiv, intIn, mul, STORAGE, stored } from "../math/expr.js";
 import { forLoop, onlyIf, setInt } from "../math/io.js";
 import { FLOOR, label, setText, textDisplay } from "./ui.js";
@@ -30,7 +30,7 @@ function spiral(): [number, number][] {
 
 /** Mark index `showcase.mark.i` of the sieve as composite. */
 function Unmark(args: Macro<{ i: number }>) {
-  $(`data modify storage ${STORAGE} showcase.sieve[${args.i}] set value 0`);
+  $.data.modify.storage(STORAGE, macro`showcase.sieve[${args.i}]`).set.value(0);
 }
 
 export function buildPrimes() {
@@ -53,7 +53,7 @@ export function buildPrimes() {
   $.setblock(`${PR.x} ${FLOOR} ${PR.z}`, "minecraft:gold_block");
   // Count them.
   setInt("showcase.primes", 0);
-  forLoop("n", N + 1, {}, (a) => setInt("showcase.primes", add(at("showcase.primes"), at(`showcase.sieve[${a.n}]`))));
+  forLoop("n", N + 1, {}, (a) => setInt("showcase.primes", add(at("showcase.primes"), at(macro`showcase.sieve[${a.n}]`))));
   textDisplay("primes_text", PR.x + 0.5, FLOOR + 2.6, PR.z + 0.5);
   setText("primes_text", `primes up to ${N}: `, { path: "showcase.primes" });
 }

@@ -1,10 +1,10 @@
 // @requires function with storage
-import { $, type Macro, type Selector } from "#mc";
+import { $, macro, type Macro, type Selector } from "#mc";
 
 export function Show(args: Macro<{ word: string; count: number; target: Selector }>) {
   $.scoreboard.players.set(args.target, "mcjs2", args.count);
   $.tellraw("@a", { text: args.word.quoted, color: "gold" });
-  $(`say mcjs2-macro-ok ${args.word} ${args.count}`);
+  $(macro`say mcjs2-macro-ok ${args.word} ${args.count}`);
 }
 
 /** @mcfunction */

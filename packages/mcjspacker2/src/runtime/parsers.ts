@@ -35,6 +35,8 @@ export interface ParserDef {
   type(props: Props, ctx: ParserContext): string;
   test(value: unknown, props: Props, ctx: ParserContext): boolean;
   serialize(value: unknown, props: Props, ctx: ParserContext): string;
+  /** How a macro argument (`text` is `$(name)`) is written; as-is when missing. */
+  macro?(text: string, props: Props, ctx: ParserContext): string;
   examples?(props: Props, ctx: ParserContext): unknown[];
 }
 
@@ -43,6 +45,7 @@ export interface UserParserDef {
   type?: string | ((props: Props, ctx: ParserContext) => string);
   test?(value: unknown, props: Props, ctx: ParserContext): boolean;
   serialize?(value: unknown, props: Props, ctx: ParserContext): string;
+  macro?(text: string, props: Props, ctx: ParserContext): string;
   examples?: unknown[] | ((props: Props, ctx: ParserContext) => unknown[]);
 }
 
@@ -222,6 +225,8 @@ const numberProvider = (integer: boolean): ParserDef => ({
   type: () => "string | number | NbtCompound",
   test: (v) => isStr(v) || isNum(v) || (isObj(v) && !Array.isArray(v)),
   serialize: (v) => (isStr(v) ? v : snbt((isNum(v) ? { type: "minecraft:constant", value: v } : v) as NbtValue)),
+  // A macro argument holds a number, which would be read as an id here.
+  macro: (text) => `{type:"minecraft:constant",value:${text}}`,
   examples: () => [integer ? 3 : 1.5, { type: "minecraft:uniform", min: 1, max: 2 }],
 });
 
@@ -377,6 +382,7 @@ function withOverride(base: ParserDef, o: UserParserDef): ParserDef {
     type: type === undefined ? base.type : typeof type === "string" ? () => type : type,
     test: o.test ?? base.test,
     serialize: o.serialize ?? base.serialize,
+    macro: o.macro ?? base.macro,
     examples: examples === undefined ? base.examples : Array.isArray(examples) ? () => examples : examples,
   };
 }

@@ -1,4 +1,4 @@
-import { $, type Macro, type Selector } from "#mc";
+import { $, macro, type Macro, type Selector } from "#mc";
 
 // A function with a parameter is a macro function: the game fills in `args` when it's called.
 export function Gift(args: Macro<{ player: Selector; item: string; count: number; from: string }>) {
@@ -9,7 +9,7 @@ export function Gift(args: Macro<{ player: Selector; item: string; count: number
 // Anything that doesn't fit one argument can be written as text.
 /** @mcfunction */
 export function Warp(args: Macro<{ destination: string }>) {
-  $(`tp @s ${args.destination}`);
+  $(macro`tp @s ${args.destination}`);
 }
 
 /** @mcfunction */

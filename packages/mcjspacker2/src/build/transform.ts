@@ -73,18 +73,22 @@ export function instrument(code: string, relFile: string, opts: { typescript: bo
       const stmt = isExport ? parent! : node;
       const list = isExport ? up(2) : parent;
       if (id && list && STATEMENT_LISTS.has(list.type)) {
-        const name = id.name as string;
+        // Only functions at the top of a file get a name. One declared inside another function is
+        // created anew on each call, so naming it would give every copy the same name.
+        const name = list.type === "Program" ? (id.name as string) : undefined;
         const tags = jsdocTags(node, isExport ? parent : undefined);
-        inserts.push({ pos: stmt.end, text: `;__mcjs_m(${name}, ${meta(node, name, tags)});`, group: 1, span: 0 });
+        inserts.push({ pos: stmt.end, text: `;__mcjs_m(${id.name as string}, ${meta(node, name, tags)});`, group: 1, span: 0 });
       }
     } else if (node.type === "ArrowFunctionExpression" || node.type === "FunctionExpression") {
-      let name = (node.id as AnyNode | null)?.name as string | undefined;
+      let name: string | undefined;
       let tags: object;
       if (parent?.type === "VariableDeclarator" && parent.init === node) {
         const declId = parent.id as AnyNode;
-        if (declId.type === "Identifier") name ??= declId.name as string;
         const decl = up(2);
         const exp = up(3)?.type === "ExportNamedDeclaration" ? up(3) : undefined;
+        // Named after the variable only at the top of a file (see function declarations above).
+        const topLevel = (exp ? up(4) : up(3))?.type === "Program";
+        if (topLevel) name = ((node.id as AnyNode | null)?.name as string | undefined) ?? (declId.type === "Identifier" ? (declId.name as string) : undefined);
         tags = jsdocTags(decl, exp, node);
       } else {
         tags = jsdocTags(node);

@@ -1,7 +1,7 @@
 // In-game self test: /function demo:generated/math/tests/math_tests (dev builds only).
 // Expected values are worked out in JavaScript at build time. Prints `math-FAIL ...` per failure and
 // `math-done pass <n> fail <n>` at the end.
-import { $, nbt, type FnRef, type Macro, type NbtCompound } from "#mc";
+import { $, macro, nbt, type FnRef, type Macro, type NbtCompound } from "#mc";
 import { Choose, Catalan, Derangements, Factorial, PascalRow, Permutations } from "./combinatorics.js";
 import { abs, floatIn, intIn, OBJECTIVE, score, STORAGE, stored, sub, toFloat, type Condition, type Num } from "./expr.js";
 import { Fib, FibBinet, FibRec } from "./fib.js";
@@ -11,7 +11,7 @@ import { Clamp, Gcd, Hypot, IntSqrt, IsPrime, Lcm, Lerp, PowMod } from "./number
 import * as T from "./trig.js";
 
 function Fail(args: Macro<{ name: string; got: number; want: number }>) {
-  $(`say math-FAIL ${args.name} got ${args.got} want ${args.want}`);
+  $(macro`say math-FAIL ${args.name} got ${args.got} want ${args.want}`);
   $.scoreboard.players.add("#fail", OBJECTIVE, 1);
 }
 
@@ -217,7 +217,7 @@ export function TestLinalg() {
 
 /** @dev */
 function Summary(args: Macro<{ pass: number; fail: number }>) {
-  $(`say math-done pass ${args.pass} fail ${args.fail}`);
+  $(macro`say math-done pass ${args.pass} fail ${args.fail}`);
 }
 
 /** @dev */

@@ -40,9 +40,12 @@ In `examples/demo`: `npx mcjs2 gen`, `npx mcjs2 build`, `npx mcjs2 dev`.
      their commands (references first, cycles by position) and the placeholders are replaced.
    - `parsers.ts`: the argument type registry (see below).
    - `macro.ts`: macro functions. A recorded function with a parameter gets an `args` proxy whose
-     properties are markers (`$(name)`); every argument accepts a marker as-is (types check them via
-     `Arg<T>` in generated signatures), SNBT writes them raw, and lines that contain the function's
-     own markers get the `$` prefix when the function ends.
+     properties are markers: objects with a symbol, owned by that function. Markers are never
+     recognized by text: while a command line is built, reading a marker's text records it
+     (`collectMacros`), and lines that used one get the `$` prefix. Markers refuse `toString`;
+     `` macro`...` `` makes new markers from text. Generated signatures accept markers anywhere
+     inside a value (`MacroValue<T>`); argument types can say how a marker is written (`macro`
+     in `ParserDef`, used by number providers).
 4. **pack** (`src/build/pack.ts`): merge with the raw `datapack/` dir, write `pack.mcmeta`, handle
    old folder names.
 5. **dev** (`src/dev/`): watch, rebuild into the server world or a save, `/reload` over RCON.

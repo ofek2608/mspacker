@@ -11,6 +11,7 @@ import { writePackDir } from "../build/pack.js";
 import { findJavaFor } from "../env/java.js";
 import { requireMinecraftRoot } from "../env/mcroot.js";
 import { readServerProperties, resolveServer } from "../env/server.js";
+import { dimensionChanges, readDimensionFiles } from "./dimensions.js";
 import { Rcon } from "./rcon.js";
 import { detectCurrentSave, findSave } from "./saves.js";
 
@@ -27,6 +28,8 @@ interface Target {
   reload(): Promise<void>;
   /** `version` changed in the config while dev was running. */
   versionChanged(cfg: ResolvedConfig, from: string): Promise<void>;
+  /** Dimension files changed; /reload doesn't load those. */
+  dimensionsChanged(ids: string[]): void;
   close(): void;
 }
 
@@ -42,6 +45,7 @@ function saveTarget(cfg: ResolvedConfig, save: string, log: (s: string) => void)
     },
     reload: async () => log("Pack updated. Run /reload in game."),
     versionChanged: async (c) => log(`Open the world in Minecraft ${c.version} to use the new version.`),
+    dimensionsChanged: (ids) => log(`Dimensions changed (${ids.join(", ")}): leave and reopen the world to load them; /reload doesn't.`),
     close: () => {},
   };
 }
@@ -141,6 +145,11 @@ async function serverTarget(cfg: ResolvedConfig, opts: DevOptions): Promise<Targ
           : `If the server is running, restart it to play on Minecraft ${c.version}.`,
       );
     },
+    dimensionsChanged: (ids) => {
+      // A server we just started loads them on boot.
+      if (skipNextReload) return;
+      opts.log(`Dimensions changed (${ids.join(", ")}): restart the server to load them (stop it, then run mcjs2 dev again); /reload doesn't.`);
+    },
     close: () => {
       rcon?.close();
       child?.kill();
@@ -183,8 +192,10 @@ export async function dev(projectDir: string, opts: DevOptions): Promise<void> {
       const { files, functionCount, warnings } = await buildPack(cfg, { dev: true });
       for (const w of warnings) opts.log(`warning: ${w}`);
       const dir = target.packDir(cfg);
+      const dimensions = dimensionChanges(readDimensionFiles(dir), files);
       writePackDir(dir, files);
       opts.log(`Built ${functionCount} functions -> ${dir} (${Date.now() - t0} ms)`);
+      if (dimensions.length) target.dimensionsChanged(dimensions);
       await target.reload();
     } catch (e) {
       opts.log(`Build failed, keeping the previous pack:\n${formatBuildError(e)}`);

@@ -1,27 +1,25 @@
 // Writing results: into storage, into a score, or as the function's return value.
-import { $, type Macro, type MacroArg, type NbtCompound } from "#mc";
-import { add, constant, intIn, OBJECTIVE, STORAGE, stored, sub, type Condition, type Num } from "./expr.js";
-
-const top = (v: Num): NbtCompound => (typeof v === "number" || !("type" in Object(v)) ? constant(v) : (v as NbtCompound));
+import { $, type Macro, type MacroArg } from "#mc";
+import { add, intIn, OBJECTIVE, STORAGE, stored, sub, type Condition, type Num, type Path } from "./expr.js";
 
 /** `demo:math <path> = value` as a float. */
-export function setFloat(path: string, value: Num) {
-  $.data.modify.storage(STORAGE, path).set.compute.default.float(top(value));
+export function setFloat(path: Path, value: Num) {
+  $.data.modify.storage(STORAGE, path).set.compute.default.float(value);
 }
 
 /** `demo:math <path> = value` as an int. */
-export function setInt(path: string, value: Num) {
-  $.data.modify.storage(STORAGE, path).set.compute.default.integer(top(value));
+export function setInt(path: Path, value: Num) {
+  $.data.modify.storage(STORAGE, path).set.compute.default.integer(value);
 }
 
 /** `<holder> math = value`. */
 export function setScore(holder: string, value: Num) {
-  $.execute.store.result.score(holder, OBJECTIVE).run.compute.default.integer(top(value));
+  $.execute.store.result.score(holder, OBJECTIVE).run.compute.default.integer(value);
 }
 
 /** End the function, returning an int. */
 export function returnInt(value: Num) {
-  $.return.run.compute.default.integer(top(value));
+  $.return.run.compute.default.integer(value);
 }
 
 /** A chain that only runs when `condition` holds: `onlyIf(c).run.say("yes")`. */

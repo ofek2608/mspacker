@@ -1,7 +1,7 @@
 // Entities for the showcase: labels, dots, bars and buttons. Everything gets the "showcase" tag, so
 // the reset can remove it all.
-import { $, nbt, type Macro, type NbtCompound } from "#mc";
-import { abs, add, floatIn, floorDiv, floorMod, mul, round, STORAGE, stored, toInt, type Num } from "../math/expr.js";
+import { $, macro, nbt, type Macro, type NbtCompound } from "#mc";
+import { abs, add, floatIn, floorDiv, floorMod, mul, round, STORAGE, stored, toInt, type Num, type Path } from "../math/expr.js";
 import { onlyIf, setFloat, setInt } from "../math/io.js";
 
 export const DIMENSION = "demo:showcase";
@@ -119,17 +119,18 @@ export function whenClicked(tag: string, onClick: () => void) {
   });
 }
 
+/** The one entity tagged `tag` (the tag may come from macro arguments). */
+const tagged = (tag: Path) => macro`@e[tag=${tag},limit=1]`;
+
 /** Set one entity's NBT `path` (a float) from an expression. */
-export function setEntityFloat(tag: string, path: string, value: Num) {
-  $.data.modify.entity(`@e[tag=${tag},limit=1]`, path).set.compute.default.float(top(value));
+export function setEntityFloat(tag: Path, path: string, value: Num) {
+  $.data.modify.entity(tagged(tag), path).set.compute.default.float(value);
 }
 
 /** Start interpolating to the new transformation this tick. */
-export function animate(tag: string) {
-  $.data.modify.entity(`@e[tag=${tag},limit=1]`, "start_interpolation").set.value(0);
+export function animate(tag: Path) {
+  $.data.modify.entity(tagged(tag), "start_interpolation").set.value(0);
 }
-
-const top = (v: Num): NbtCompound => (typeof v === "number" || !("type" in Object(v)) ? { type: "minecraft:constant", value: v } : (v as NbtCompound));
 
 export type Part = string | { path: string };
 
@@ -168,8 +169,9 @@ const joiners = new Map<number, (args: Macro<Record<string, string>>) => void>()
 function joinText(count: number) {
   if (!joiners.has(count)) {
     joiners.set(count, (args: Macro<Record<string, string>>) => {
-      const text = Array.from({ length: count }, (_, i) => `${args[`p${i}`]}`).join("");
-      $(`data modify entity @e[tag=${args.tag},limit=1] text set value "${text}"`);
+      // macro`...` joins macro arguments into text, so fold the parts into one.
+      const text = Array.from({ length: count }, (_, i) => args[`p${i}`]!).reduce((all, part) => macro`${all}${part}`);
+      $.data.modify.entity(tagged(args.tag!), "text").set.value(macro`"${text}"`);
     });
   }
   return joiners.get(count)!;
@@ -177,13 +179,12 @@ function joinText(count: number) {
 
 /** A square at a position worked out in game: x/y/z/color/tag from storage `with` (color: ARGB int). */
 export function Dot(args: Macro<{ x: number; y: number; z: number; color: number; tag: string }>) {
-  const data = nbt.stringify({ Tags: [TAG, args.tag.quoted], ...squareData(0.15, 0), background: args.color });
-  $(`summon text_display ${args.x} ${args.y} ${args.z} ${data}`);
+  $.summon("text_display", macro`${args.x} ${args.y} ${args.z}`, { Tags: [TAG, args.tag.quoted], ...squareData(0.15, 0), background: args.color });
 }
 
 /** setblock at a position worked out in game (x/y/z/block from storage `with`). */
 export function Plot(args: Macro<{ x: number; y: number; z: number; block: string }>) {
-  $(`setblock ${args.x} ${args.y} ${args.z} ${args.block}`);
+  $.setblock(macro`${args.x} ${args.y} ${args.z}`, args.block);
 }
 
 /** Write `demo:math <path>` as a float; a shorter name for the stations. */

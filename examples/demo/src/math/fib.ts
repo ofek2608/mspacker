@@ -1,5 +1,5 @@
 // Fibonacci three ways.
-import { $, type Macro } from "#mc";
+import { $, macro, type Macro } from "#mc";
 import { add, constant, div, intIn, OBJECTIVE, pow, round, score, sqrt, STORAGE, stored, sub, toInt } from "./expr.js";
 import { forLoop, onlyIf, returnInt, setInt } from "./io.js";
 
@@ -13,10 +13,10 @@ export function FibRec(args: Macro<{ n: number }>) {
   // The first result waits in storage while the second call runs. Calls that are still running all
   // have different n, so `fib.p<n>` can't be overwritten by a deeper call.
   setInt("fib.call.n", sub(args.n, 1));
-  $.execute.store.result.storage(STORAGE, `fib.p${args.n}`).int(1).run.function(FibRec).with.storage(STORAGE, "fib.call");
+  $.execute.store.result.storage(STORAGE, macro`fib.p${args.n}`).int(1).run.function(FibRec).with.storage(STORAGE, "fib.call");
   setInt("fib.call.n", sub(args.n, 2));
   $.execute.store.result.score("#fib", OBJECTIVE).run.function(FibRec).with.storage(STORAGE, "fib.call");
-  returnInt(add(stored(`fib.p${args.n}`), score("#fib")));
+  returnInt(add(stored(macro`fib.p${args.n}`), score("#fib")));
 }
 
 /**

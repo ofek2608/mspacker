@@ -41,6 +41,9 @@ describe("inline providers and slot sources (26.x)", () => {
     expect(def.serialize("mypack:speed", undefined, c)).toBe("mypack:speed");
     expect(def.serialize({ type: "minecraft:uniform", min: 1, max: 2 }, undefined, c)).toBe('{type:"minecraft:uniform",min:1,max:2}');
   });
+  it("wraps macro arguments as constants (a bare $(n) would be read as an id)", () => {
+    expect(parserDef("minecraft:context_int_provider").macro!("$(n)", undefined, c)).toBe('{type:"minecraft:constant",value:$(n)}');
+  });
   it("serializes slot sources", () => {
     const def = parserDef("minecraft:slot_source");
     expect(def.serialize("container.*", undefined, c)).toBe("container.*");

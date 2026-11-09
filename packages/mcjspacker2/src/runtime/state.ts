@@ -7,7 +7,7 @@
  */
 import { createHash } from "node:crypto";
 import type { ParserContext } from "./parsers.js";
-import { macroArgs, MACRO_REF } from "./macro.js";
+import { macroArgs, withOwner } from "./macro.js";
 
 /** Data pack format of 1.20.2, the first version with function macros. */
 const FORMAT_MACROS = 18;
@@ -31,6 +31,8 @@ export interface CommandEntry {
   head: string;
   /** The final text, or null if the command is incomplete. */
   resolve: () => string | null;
+  /** Whether a macro argument was written into the line (it becomes a `$` line). */
+  isMacro: () => boolean;
   /** The text so far, for errors. */
   describe: () => string;
   /** Where the command was started, for errors. */
@@ -63,8 +65,6 @@ export interface State {
   bodies: Map<Function, string[]>;
   /** Functions waiting to be recorded, in order. */
   queue: Function[];
-  /** Names of every macro argument handed out so far (to find them in other functions' lines). */
-  macroNames: Set<string>;
   /** Anonymous functions, by placeholder number; named once everything is recorded. */
   anonymous: { fn: Function; origin: string; lines: string[] }[];
   functions: Map<string, FunctionRecord>;
@@ -94,12 +94,35 @@ function setDev(value: boolean): void {
   for (const listener of flag.listeners) listener(value);
 }
 
+export interface PackInfo {
+  /** `mypack` */
+  namespace: string;
+  /** Where function names start: `mypack:`, or `mypack:generated/` with a folder prefix. */
+  functionPrefix: string;
+}
+
+const INFO_KEY = Symbol.for("mcjspacker2.packInfo");
+type InfoGlobal = typeof globalThis & { [INFO_KEY]?: { value: PackInfo; listeners: Set<(v: PackInfo) => void> } };
+
+/** Shared namespace info (`__NAMESPACE__`, `__FUNCTION_PREFIX__`): every copy of the runtime subscribes. */
+export function packInfo(): { value: PackInfo; listeners: Set<(v: PackInfo) => void> } {
+  const g = globalThis as InfoGlobal;
+  return (g[INFO_KEY] ??= { value: { namespace: "", functionPrefix: "" }, listeners: new Set() });
+}
+
+function setPackInfo(spec: NamespaceSpec): void {
+  const info = packInfo();
+  info.value = { namespace: spec.ns, functionPrefix: `${spec.ns}:${spec.prefix}` };
+  for (const listener of info.listeners) listener(info.value);
+}
+
 export function resetState(
   spec: NamespaceSpec,
   version?: { version: string; packFormat: number },
   options: { dev?: boolean } = {},
 ): State {
   setDev(options.dev ?? false);
+  setPackInfo(spec);
   const state: State = {
     spec,
     dev: options.dev ?? false,
@@ -114,7 +137,6 @@ export function resetState(
     bodies: new Map(),
     queue: [],
     anonymous: [],
-    macroNames: new Set(),
     functions: new Map(),
     stack: [],
     tags: new Map(),
@@ -156,16 +178,21 @@ function currentBuffer(head: string): BufferItem[] {
 }
 
 /** Start a new command line in the current function; its text is resolved when the function ends. */
-export function beginCommand(head: string, resolve: () => string | null, describe: () => string): CommandEntry {
+export function beginCommand(
+  head: string,
+  resolve: () => string | null,
+  describe: () => string,
+  isMacro: () => boolean,
+): CommandEntry {
   const buffer = currentBuffer(head);
-  const entry: CommandEntry = { head, resolve, describe, origin: new Error() };
+  const entry: CommandEntry = { head, resolve, describe, isMacro, origin: new Error() };
   buffer.push(entry);
   return entry;
 }
 
-/** Append a raw line to the current function. */
-export function emitLine(line: string): void {
-  currentBuffer(line.split(" ", 1)[0] ?? line).push(line);
+/** Append a line to the current function; `macro` lines get the `$` prefix. */
+export function emitLine(line: string, macro = false): void {
+  currentBuffer(line.split(" ", 1)[0] ?? line).push(macro && !line.startsWith("$") ? "$" + line : line);
 }
 
 function finalize(items: BufferItem[], where: string): string[] {
@@ -178,7 +205,7 @@ function finalize(items: BufferItem[], where: string): string[] {
       e.stack = `${e.name}: ${e.message}\n${item.origin.stack?.split("\n").slice(1).join("\n") ?? ""}`;
       throw e;
     }
-    return text;
+    return item.isMacro() && !text.startsWith("$") ? "$" + text : text;
   });
 }
 
@@ -190,40 +217,20 @@ export function recordBody(fn: Function): string[] {
   const meta = s.metas.get(fn);
   const where = describe(fn, meta);
   // A function with a parameter is a macro function: the parameter hands out macro arguments.
-  const used = new Set<string>();
   const macro = fn.length > 0;
-  if (macro) {
-    if (s.ctx.packFormat < FORMAT_MACROS) {
-      throw new Error(`${where} has a parameter, which makes it a macro function. Macros need Minecraft 1.20.2 or newer.`);
-    }
+  if (macro && s.ctx.packFormat < FORMAT_MACROS) {
+    throw new Error(`${where} has a parameter, which makes it a macro function. Macros need Minecraft 1.20.2 or newer.`);
   }
   const buf: BufferItem[] = [];
   s.stack.push(buf);
   try {
-    if (macro) fn(macroArgs(used, s.macroNames, where));
-    else fn();
+    withOwner(fn, where, () => (macro ? fn(macroArgs(fn, where)) : fn()));
   } finally {
     s.stack.pop();
   }
-  const lines = finalize(buf, where).map((line) => macroLine(line, used, where));
+  const lines = finalize(buf, where);
   s.bodies.set(fn, lines);
   return lines;
-}
-
-/** Lines that use the function's macro arguments become macro lines (`$...`). */
-function macroLine(line: string, used: Set<string>, where: string): string {
-  if (line.startsWith("$")) return line;
-  const s = getState();
-  const names = [...line.matchAll(MACRO_REF)].map((m) => m[1]!).filter((n) => s.macroNames.has(n));
-  if (!names.length) return line;
-  const foreign = names.find((n) => !used.has(n));
-  if (foreign) {
-    throw new Error(
-      `${where} uses the macro argument "${foreign}" of another function in "${line}". Macro arguments only work in ` +
-        `their own function's commands. To use one in a function you call, pass it on: $.function(Other, { ${foreign}: args.${foreign} }).`,
-    );
-  }
-  return "$" + line;
 }
 
 // ---------------------------------------------------------------- function ids
@@ -246,11 +253,12 @@ function claim(id: string, fn: Function | null, origin: string): void {
   if (!existing) s.functions.set(id, { owner: fn, origin, lines: [] });
 }
 
-function namedIdFor(fn: Function, meta: FnMeta | undefined): string | null {
+function namedIdFor(meta: FnMeta | undefined): string | null {
   const s = getState();
   if (typeof meta?.mcfunction === "string") return overrideId(s.spec, meta.mcfunction);
-  if (!meta?.file) return null;
-  return namedFunctionId(s.spec, meta.file, meta.name ?? fn.name);
+  // Named by the build (top-level functions); anything else is anonymous.
+  if (!meta?.file || !meta.name) return null;
+  return namedFunctionId(s.spec, meta.file, meta.name);
 }
 
 function hash(text: string): string {
@@ -285,7 +293,7 @@ export function fnId(ref: unknown): string {
     );
   }
 
-  const named = namedIdFor(ref, meta);
+  const named = namedIdFor(meta);
   if (named) {
     claim(named, ref, origin);
     s.ids.set(ref, named);
@@ -477,7 +485,7 @@ export function collectOutput(options: OutputOptions = {}): BuildOutput {
     .sort(([, a], [, b]) => (a.file ?? "").localeCompare(b.file ?? "") || (a.line ?? 0) - (b.line ?? 0));
 
   for (const [fn, meta] of entries) {
-    if (!namedIdFor(fn, meta) && (meta.mcfunction || meta.dev)) {
+    if (!namedIdFor(meta) && (meta.mcfunction || meta.dev)) {
       throw new Error(`Entry point ${describe(fn, meta)} has no usable name. Give it a name or an id: /** @mcfunction my/id */`);
     }
     fnId(fn);

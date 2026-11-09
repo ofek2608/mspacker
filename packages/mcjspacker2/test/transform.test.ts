@@ -26,6 +26,17 @@ describe("instrument", () => {
     );
   });
 
+  it("names only functions at the top of a file", () => {
+    const out = run(
+      `export function Outer() {\n  function inner() {}\n  const step = () => 1;\n  const named = function fn() {};\n}\nconst top = function own() {};\n`,
+    );
+    expect(out).toContain(`;__mcjs_m(Outer, {"file":"dir/file.ts","name":"Outer","line":1});`);
+    expect(out).toContain(`;__mcjs_m(inner, {"file":"dir/file.ts","line":2});`);
+    expect(out).toContain(`const step = __mcjs_w(() => 1, {"file":"dir/file.ts","line":3})`);
+    expect(out).toContain(`const named = __mcjs_w(function fn() {}, {"file":"dir/file.ts","line":4})`);
+    expect(out).toContain(`{"file":"dir/file.ts","name":"own","line":6}`);
+  });
+
   it("leaves untagged functions as plain metadata", () => {
     const out = run(`function helper<T>(x: T) { return x }\n`);
     expect(out).toContain(`;__mcjs_m(helper, {"file":"dir/file.ts","name":"helper","line":1});`);

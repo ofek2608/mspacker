@@ -13,7 +13,7 @@
  * - Every step returns a new proxy; the line is checked for completeness when its function ends.
  */
 import { parserDef } from "./parsers.js";
-import { isMacroArg } from "./macro.js";
+import { collectMacros, isMacroArg, isVerbatimMacro, MacroError } from "./macro.js";
 import { beginCommand, emitLine, getState, type CommandEntry } from "./state.js";
 
 /** Compact command tree node (generated from commands.json). */
@@ -156,6 +156,8 @@ interface Candidate {
 interface ChainState {
   slot: Slot | null;
   cands: Candidate[];
+  /** A macro argument was written into the line so far. */
+  macro: boolean;
 }
 
 /** One line being built. Stepping from a state other than `latest` (a reused prefix) starts a new line. */
@@ -171,9 +173,10 @@ function formatArg(a: unknown): string {
   return typeof a === "function" ? `[function ${a.name || "anonymous"}]` : (JSON.stringify(a) ?? String(a));
 }
 
-/** Text for a root call: `$("say hi")` or `....run("say hi")`. */
+/** Text for a root call: `$("say hi")`, `` $(macro`say ${args.x}`) `` or `....run("say hi")`. */
 function rootCallText(args: unknown[]): string {
   if (args.length === 1 && typeof args[0] === "string") return args[0];
+  if (args.length === 1 && isMacroArg(args[0])) return args[0].text;
   throw new Error(
     `$(...) takes one command as a string, got (${args.map(formatArg).join(", ")}). ` +
       "To call a function, use $.function(fn).",
@@ -189,8 +192,8 @@ function currentBuffer(): unknown {
 export function createRoot(root: TreeNode): unknown {
   const atRoot = (st: ChainState) => st.cands.every((c) => !c.done && continuation(root, c.node) === root);
 
-  const advance = (prev: ChainState, cands: Candidate[]): ChainState => {
-    const next: ChainState = { slot: prev.slot, cands };
+  const advance = (prev: ChainState, cands: Candidate[], macro = false): ChainState => {
+    const next: ChainState = { slot: prev.slot, cands, macro: prev.macro || macro };
     const buffer = currentBuffer();
     if (prev.slot && prev.slot.latest === prev && prev.slot.buffer === buffer) {
       prev.slot.latest = next;
@@ -200,36 +203,45 @@ export function createRoot(root: TreeNode): unknown {
     slot.entry = beginCommand(cands[0]!.parts[0]!, () => {
       const done = slot.latest.cands.find((c) => c.done || c.node.x);
       return done ? text(done) : null;
-    }, () => text(slot.latest.cands[0]!));
+    }, () => text(slot.latest.cands[0]!), () => slot.latest.macro);
     next.slot = slot;
     return next;
   };
 
-  /** Candidates after consuming `value` as an argument; `error` is the first serialize failure. */
+  /**
+   * Candidates after consuming `value` as an argument; `error` is the first serialize failure,
+   * `macro` whether a macro argument was written.
+   */
   const consumeArg = (cands: Candidate[], value: unknown) => {
     const ctx = getState().ctx;
     const next: Candidate[] = [];
     let error: unknown;
-    for (const c of cands) {
-      if (c.done) continue;
-      const src = continuation(root, c.node);
-      for (const child of Object.values(src.c ?? {})) {
-        if (child.l) continue;
-        // A macro argument fits any argument (its type is checked by TypeScript only).
-        if (isMacroArg(value)) {
-          next.push({ node: child, parts: [...c.parts, value.text] });
-          continue;
-        }
-        const def = parserDef(child.p ?? "");
-        if (!def.test(value, child.o, ctx)) continue;
-        try {
-          next.push({ node: child, parts: [...c.parts, def.serialize(value, child.o, ctx)] });
-        } catch (e) {
-          error ??= e;
+    const { macro } = collectMacros(() => {
+      for (const c of cands) {
+        if (c.done) continue;
+        const src = continuation(root, c.node);
+        for (const child of Object.values(src.c ?? {})) {
+          if (child.l) continue;
+          const def = parserDef(child.p ?? "");
+          // A macro argument fits any argument (only TypeScript checks its type); the argument
+          // type may say how to write it (number providers wrap it as a constant), except for
+          // macro`...` text, which is written exactly as given.
+          if (isMacroArg(value)) {
+            const adapt = def.macro && !isVerbatimMacro(value);
+            next.push({ node: child, parts: [...c.parts, adapt ? def.macro!(value.text, child.o, ctx) : value.text] });
+            continue;
+          }
+          if (!def.test(value, child.o, ctx)) continue;
+          try {
+            next.push({ node: child, parts: [...c.parts, def.serialize(value, child.o, ctx)] });
+          } catch (e) {
+            if (e instanceof MacroError || (e as Error)?.name === "MacroError") throw e;
+            error ??= e;
+          }
         }
       }
-    }
-    return { next, error };
+    });
+    return { next, error, macro };
   };
 
   const proxyFor = (st: ChainState): unknown =>
@@ -261,22 +273,24 @@ export function createRoot(root: TreeNode): unknown {
       },
       apply(_target, _this, args: unknown[]) {
         if (atRoot(st)) {
-          const line = rootCallText(args);
-          if (!st.slot) return void emitLine(line); // `$("...")`: a line of its own
-          return void advance(st, st.cands.map((c) => ({ node: c.node, parts: [...c.parts, line], done: true as const })));
+          const { result: line, macro } = collectMacros(() => rootCallText(args));
+          if (!st.slot) return void emitLine(line, macro); // `$("...")`: a line of its own
+          return void advance(st, st.cands.map((c) => ({ node: c.node, parts: [...c.parts, line], done: true as const })), macro);
         }
         let cands = st.cands.filter((c) => !c.done);
+        let macro = false;
         for (const value of args) {
-          const { next, error } = consumeArg(cands, value);
+          const { next, error, macro: used } = consumeArg(cands, value);
+          macro ||= used;
           if (!next.length) {
             if (error) throw error;
             throw new Error(`No syntax of "${text(st.cands[0]!)}" matches arguments (${args.map(formatArg).join(", ")}).`);
           }
           cands = next;
         }
-        return proxyFor(advance(st, cands));
+        return proxyFor(advance(st, cands, macro));
       },
     });
 
-  return proxyFor({ slot: null, cands: [{ node: root, parts: [] }] });
+  return proxyFor({ slot: null, cands: [{ node: root, parts: [] }], macro: false });
 }
