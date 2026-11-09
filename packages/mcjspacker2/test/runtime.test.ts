@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { beforeEach, describe, expect, it } from "vitest";
 import { compactTree } from "../src/codegen/generate.js";
 import { bindTree, Chain, command, registerChain } from "../src/runtime/command.js";
-import { fnId, raw, tag } from "../src/runtime/index.js";
+import { fnId, raw, resource, tag } from "../src/runtime/index.js";
 import { parseNamespace } from "../src/runtime/naming.js";
 import { collectOutput, resetState, type FnMeta } from "../src/runtime/state.js";
 
@@ -192,5 +192,113 @@ describe("function references", () => {
       "data/pk/functions/gen/main/init.mcfunction",
       "data/pk/tags/blocks/stuff.json",
     ]);
+  });
+});
+
+describe("queued recording", () => {
+  it("records long reference chains without nesting", () => {
+    // 20k functions that each call the next: nested recording would overflow the JS stack.
+    const fns: Function[] = [];
+    for (let i = 0; i < 20_000; i++) {
+      const f = () => {
+        Say(`n${i}`);
+        if (i + 1 < 20_000) Function(fns[i + 1]);
+      };
+      meta(f, { file: "chain.ts", name: `F${i}` });
+      fns.push(f);
+    }
+    function Main() {
+      Function(fns[0]);
+    }
+    meta(Main, { file: "main.ts", name: "Main", mcfunction: true });
+    const files = build();
+    expect(files["data/pk/function/gen/chain/f0.mcfunction"]).toBe("say n0\nfunction pk:gen/chain/f1\n");
+    expect(files["data/pk/function/gen/chain/f19999.mcfunction"]).toBe("say n19999\n");
+  });
+
+  it("handles long chains of anonymous functions", () => {
+    const fns: Function[] = [];
+    for (let i = 0; i < 5_000; i++) {
+      fns.push(() => {
+        Say(`a${i}`);
+        if (i + 1 < 5_000) Function(fns[i + 1]);
+      });
+    }
+    function Main() {
+      Function(fns[0]);
+    }
+    meta(Main, { file: "main.ts", name: "Main", mcfunction: true });
+    const files = build();
+    expect(Object.keys(files).filter((f) => f.includes("__anon"))).toHaveLength(5_000);
+    expect(files["data/pk/function/gen/main/main.mcfunction"]).toMatch(/^function pk:gen\/__anon\/[0-9a-f]{8}\n$/);
+  });
+
+  it("runs .Run callbacks immediately, so they see the caller's state", () => {
+    function Main() {
+      let wave = 0;
+      for (; wave < 2; wave++) {
+        Execute().As("@a").Run(() => {
+          Say(`wave ${wave}`);
+          Say("x");
+        });
+      }
+    }
+    meta(Main, { file: "main.ts", name: "Main", mcfunction: true });
+    const files = build();
+    const bodies = Object.entries(files).filter(([f]) => f.includes("__anon")).map(([, b]) => b).sort();
+    expect(bodies).toEqual(["say wave 0\nsay x\n", "say wave 1\nsay x\n"]);
+  });
+
+  it("resolves anonymous ids in raw lines, tags and resources", () => {
+    const anon = () => {
+      Say("a");
+      Say("b");
+    };
+    function Main() {
+      raw(`schedule function ${fnId(anon)} 1s`);
+      tag("function", "pk:t", [fnId(anon)]);
+      resource("advancement", "pk:adv", { rewards: { function: fnId(anon) } });
+    }
+    meta(Main, { file: "main.ts", name: "Main", mcfunction: true });
+    const files = build();
+    const id = /schedule function (\S+) 1s/.exec(files["data/pk/function/gen/main/main.mcfunction"]!)![1]!;
+    expect(id).toMatch(/^pk:gen\/__anon\/[0-9a-f]{8}$/);
+    expect(JSON.parse(files["data/pk/tags/function/t.json"]!).values).toEqual([id]);
+    expect(JSON.parse(files["data/pk/advancement/adv.json"]!).rewards.function).toBe(id);
+    expect(Object.values(files).join("")).not.toContain("\u0000");
+  });
+
+  it("records functions referenced by tags added while recording", () => {
+    function Late() {
+      Say("late");
+    }
+    meta(Late, { file: "main.ts", name: "Late" });
+    function Main() {
+      tag("function", "pk:late", [Late]);
+    }
+    meta(Main, { file: "main.ts", name: "Main", mcfunction: true });
+    expect(build()["data/pk/function/gen/main/late.mcfunction"]).toBe("say late\n");
+  });
+
+  it("gives anonymous functions in a reference cycle position-based ids", () => {
+    const fns: Function[] = [];
+    fns[0] = () => {
+      Say("ping");
+      Function(fns[1]);
+    };
+    fns[1] = () => {
+      Say("pong");
+      Function(fns[0]);
+    };
+    meta(fns[0]!, { file: "main.ts", line: 1 });
+    meta(fns[1]!, { file: "main.ts", line: 5 });
+    function Main() {
+      Function(fns[0]);
+    }
+    meta(Main, { file: "main.ts", name: "Main", mcfunction: true });
+    const files = build();
+    const anon = Object.entries(files).filter(([f]) => f.includes("__anon"));
+    expect(anon).toHaveLength(2);
+    for (const [, body] of anon) expect(body).toMatch(/^say p[io]ng\nfunction pk:gen\/main\/__anon\/p?[0-9a-f]{8}\n$/);
   });
 });

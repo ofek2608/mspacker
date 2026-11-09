@@ -49,6 +49,12 @@ export interface State {
   ids: Map<Function, string>;
   bodies: Map<Function, string[]>;
   recording: Set<Function>;
+  /** Functions waiting to be recorded, in order, and everything ever queued. */
+  queue: Function[];
+  queued: Set<Function>;
+  /** Placeholder tokens for functions whose id is assigned after recording. */
+  tokens: Map<Function, number>;
+  tokenFns: Function[];
   functions: Map<string, FunctionRecord>;
   stack: BufferItem[][];
   tags: Map<string, TagRecord>;
@@ -73,6 +79,10 @@ export function resetState(spec: NamespaceSpec, version?: { version: string; pac
     ids: new Map(),
     bodies: new Map(),
     recording: new Set(),
+    queue: [],
+    queued: new Set(),
+    tokens: new Map(),
+    tokenFns: [],
     functions: new Map(),
     stack: [],
     tags: new Map(),
@@ -153,6 +163,16 @@ export function recordBody(fn: Function): string[] {
 }
 
 // ---------------------------------------------------------------- function ids
+//
+// Functions are recorded one at a time from a queue, never nested inside each other: a reference
+// (`Function(B)`, `if function B`, `fnId(B)`, a tag) only queues B and writes its id, or a placeholder
+// token when the id isn't known yet. Named functions have path-based ids that are known up front.
+// Anonymous ids are content hashes, so they are assigned after the queue is drained (bottom-up over
+// the reference graph) and the tokens are replaced when the output is rendered.
+//
+// The exception is `.Run(() => ...)`: an anonymous callback runs immediately, so it sees the
+// surrounding JS state, and is inlined when it emits a single command. That nests only as deep as
+// callbacks are nested in the source.
 
 function claim(id: string, fn: Function | null, origin: string): void {
   const s = getState();
@@ -174,68 +194,51 @@ function hash(text: string): string {
   return createHash("sha1").update(text).digest("hex");
 }
 
-/**
- * Resolve a TS function to its mcfunction id, recording its body the first time.
- * Named functions get a path-based id; anonymous ones a content hash.
- */
-export function resolveFunction(fn: Function): string {
+const TOKEN = /\u0000fn:(\d+)\u0000/g;
+
+/** Add `fn` to the recording queue (once). Returns true if it was new. */
+function enqueue(fn: Function): boolean {
+  const s = getState();
+  if (s.queued.has(fn)) return false;
+  s.queued.add(fn);
+  s.queue.push(fn);
+  return true;
+}
+
+/** Give a named function its id now (ids of named functions don't depend on their body). */
+function assignNamed(fn: Function): string | null {
   const s = getState();
   const known = s.ids.get(fn);
   if (known) return known;
   const meta = s.metas.get(fn);
-  const origin = describe(fn, meta);
-
   const named = namedIdFor(fn, meta);
-  if (named) {
-    claim(named, fn, origin);
-    s.ids.set(fn, named);
-    s.functions.get(named)!.lines = recordBody(fn);
-    return named;
-  }
-
-  // Anonymous. A recursive reference while recording gets a position-based id.
-  if (s.recording.has(fn)) {
-    const id = anonymousId(s.spec, meta?.file, "p" + hash(`${meta?.file}:${meta?.line}:${fn.toString()}`).slice(0, 8));
-    claim(id, fn, origin);
-    s.ids.set(fn, id);
-    return id;
-  }
-  s.recording.add(fn);
-  let lines: string[];
-  try {
-    lines = recordBody(fn);
-  } finally {
-    s.recording.delete(fn);
-  }
-  const assigned = s.ids.get(fn);
-  if (assigned) {
-    s.functions.get(assigned)!.lines = lines;
-    return assigned;
-  }
-  const body = lines.join("\n");
-  const full = hash(body);
-  for (let len = 8; len <= full.length; len += 4) {
-    const id = anonymousId(s.spec, meta?.file, full.slice(0, len));
-    const existing = s.functions.get(id);
-    if (!existing) {
-      s.functions.set(id, { owner: fn, origin, lines });
-      s.ids.set(fn, id);
-      return id;
-    }
-    if (existing.lines.join("\n") === body) {
-      // Identical body: share the function.
-      s.ids.set(fn, id);
-      return id;
-    }
-  }
-  throw new Error(`Could not allocate an id for ${origin}.`);
+  if (!named) return null;
+  claim(named, fn, describe(fn, meta));
+  s.ids.set(fn, named);
+  return named;
 }
 
-/** Serialize a function reference argument: TS function -> id, string -> as-is. */
+/** Placeholder for a function whose id is assigned later. */
+function tokenFor(fn: Function): string {
+  const s = getState();
+  let n = s.tokens.get(fn);
+  if (n === undefined) {
+    n = s.tokenFns.length;
+    s.tokenFns.push(fn);
+    s.tokens.set(fn, n);
+  }
+  return `\u0000fn:${n}\u0000`;
+}
+
+/**
+ * Serialize a function reference: TS function -> its id (or a placeholder resolved at output),
+ * string -> as-is. The function is queued for recording, not recorded here.
+ */
 export function functionRef(ref: unknown): string {
-  if (typeof ref === "function") return resolveFunction(ref);
   if (typeof ref === "string") return ref;
-  throw new Error(`Expected a function or function id, got ${typeof ref}.`);
+  if (typeof ref !== "function") throw new Error(`Expected a function or function id, got ${typeof ref}.`);
+  enqueue(ref);
+  return assignNamed(ref) ?? tokenFor(ref);
 }
 
 /** Text after `run`: a single anonymous command is inlined, everything else becomes `function <id>`. */
@@ -243,8 +246,9 @@ export function runTarget(target: unknown): string {
   if (typeof target === "string") return target;
   if (typeof target !== "function") throw new Error(`run expects a callback, function or command string.`);
   const s = getState();
-  const meta = s.metas.get(target);
-  if (!s.ids.has(target) && !namedIdFor(target, meta) && !s.recording.has(target)) {
+  const isAnonymous = !s.ids.has(target) && !namedIdFor(target, s.metas.get(target));
+  if (isAnonymous && !s.tokens.has(target) && !s.recording.has(target)) {
+    // Run the callback now (it may depend on the caller's JS state) and inline a single command.
     s.recording.add(target);
     let lines: string[];
     try {
@@ -252,9 +256,124 @@ export function runTarget(target: unknown): string {
     } finally {
       s.recording.delete(target);
     }
-    if (!s.ids.has(target) && lines.length === 1 && !lines[0]!.startsWith("$")) return lines[0]!;
+    // A callback that referenced itself while recording must stay a function.
+    if (!s.tokens.has(target) && lines.length === 1 && !lines[0]!.startsWith("$")) return lines[0]!;
   }
-  return `function ${resolveFunction(target)}`;
+  return `function ${functionRef(target)}`;
+}
+
+/** Record every queued function, one at a time. */
+function drainQueue(): void {
+  const s = getState();
+  while (s.queue.length) {
+    const fn = s.queue.shift()!;
+    if (s.bodies.has(fn)) continue;
+    s.recording.add(fn);
+    try {
+      recordBody(fn);
+    } finally {
+      s.recording.delete(fn);
+    }
+  }
+}
+
+/** Replace placeholder tokens with function ids. */
+function resolveTokens(text: string): string {
+  if (!text.includes("\u0000")) return text;
+  const s = getState();
+  return text.replace(TOKEN, (_, n: string) => {
+    const fn = s.tokenFns[Number(n)]!;
+    const id = s.ids.get(fn);
+    if (!id) throw new Error(`mcjspacker2 internal error: no id for ${describe(fn, s.metas.get(fn))}.`);
+    return id;
+  });
+}
+
+function resolveDeep(value: unknown): unknown {
+  if (typeof value === "string") return resolveTokens(value);
+  if (Array.isArray(value)) return value.map(resolveDeep);
+  if (value && typeof value === "object" && Object.getPrototypeOf(value) === Object.prototype) {
+    return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, resolveDeep(v)]));
+  }
+  return value;
+}
+
+/**
+ * Assign ids to all recorded functions: named ones by path, anonymous ones by the hash of their body
+ * with references resolved. Walks the reference graph iteratively (no recursion); anonymous functions
+ * in a reference cycle get a position-based id instead.
+ */
+function assignIds(): void {
+  const s = getState();
+  const recorded = [...s.queued];
+  for (const fn of recorded) assignNamed(fn);
+
+  const deps = (fn: Function): Function[] => {
+    const out: Function[] = [];
+    for (const line of s.bodies.get(fn) ?? []) {
+      for (const m of line.matchAll(TOKEN)) out.push(s.tokenFns[Number(m[1])]!);
+    }
+    return out;
+  };
+
+  const positionId = (fn: Function) => {
+    const meta = s.metas.get(fn);
+    const id = anonymousId(s.spec, meta?.file, "p" + hash(`${meta?.file}:${meta?.line}:${fn.toString()}`).slice(0, 8));
+    claim(id, fn, describe(fn, meta));
+    s.ids.set(fn, id);
+  };
+
+  const hashId = (fn: Function) => {
+    const meta = s.metas.get(fn);
+    const body = s.bodies.get(fn)!.map(resolveTokens).join("\n");
+    const full = hash(body);
+    for (let len = 8; len <= full.length; len += 4) {
+      const id = anonymousId(s.spec, meta?.file, full.slice(0, len));
+      const existing = s.functions.get(id);
+      if (!existing) {
+        s.functions.set(id, { owner: fn, origin: describe(fn, meta), lines: [] });
+        s.ids.set(fn, id);
+        return;
+      }
+      const other = existing.owner && s.bodies.get(existing.owner);
+      if (other && other.map(resolveTokens).join("\n") === body) {
+        // Identical body: share the function.
+        s.ids.set(fn, id);
+        return;
+      }
+    }
+    throw new Error(`Could not allocate an id for ${describe(fn, meta)}.`);
+  };
+
+  const visit = new Map<Function, "open" | "done">();
+  for (const root of recorded) {
+    if (s.ids.has(root) || visit.has(root)) continue;
+    visit.set(root, "open");
+    const stack = [{ fn: root, deps: deps(root), i: 0 }];
+    while (stack.length) {
+      const top = stack[stack.length - 1]!;
+      if (top.i < top.deps.length) {
+        const d = top.deps[top.i++]!;
+        if (s.ids.has(d)) continue;
+        const state = visit.get(d);
+        if (state === undefined) {
+          visit.set(d, "open");
+          stack.push({ fn: d, deps: deps(d), i: 0 });
+        } else if (state === "open") {
+          positionId(d); // cycle back to a function still being resolved
+        }
+        continue;
+      }
+      stack.pop();
+      visit.set(top.fn, "done");
+      if (!s.ids.has(top.fn)) hashId(top.fn);
+    }
+  }
+
+  for (const fn of recorded) {
+    const rec = s.functions.get(s.ids.get(fn)!)!;
+    if (rec.owner === fn) rec.lines = s.bodies.get(fn)!.map(resolveTokens);
+  }
 }
 
 // ---------------------------------------------------------------- tags and resources
@@ -324,16 +443,24 @@ export function collectOutput(options: OutputOptions = {}): BuildOutput {
     if (!namedIdFor(fn, meta) && meta.mcfunction) {
       throw new Error(`Entry point ${describe(fn, meta)} has no usable name. Give it a name or an id: /** @mcfunction my/id */`);
     }
-    resolveFunction(fn);
+    enqueue(fn);
     if (meta.load) addTag("function", "minecraft:load", [fn]);
     if (meta.tick) addTag("function", "minecraft:tick", [fn]);
   }
 
+  // Record everything reachable. Functions can add tags while recording, so repeat until stable.
+  let more = true;
+  while (more) {
+    drainQueue();
+    more = false;
+    for (const tag of s.tags.values()) for (const v of tag.values) if (typeof v === "function" && enqueue(v)) more = true;
+  }
+  assignIds();
+
   const files = new Map<string, string>();
-  // Tags may reference functions that are not yet recorded; resolve before emitting functions.
   const tagFiles: [string, string][] = [];
   for (const tag of [...s.tags.values()].sort((a, b) => a.id.localeCompare(b.id))) {
-    const values = tag.values.map((v) => (typeof v === "function" ? resolveFunction(v) : v));
+    const values = tag.values.map((v) => (typeof v === "function" ? s.ids.get(v)! : resolveTokens(v)));
     const [ns, path] = splitId(tag.id);
     tagFiles.push([
       `data/${ns}/tags/${tagFolder(tag.registry)}/${path}.json`,
@@ -347,7 +474,7 @@ export function collectOutput(options: OutputOptions = {}): BuildOutput {
   for (const [p, c] of tagFiles) files.set(p, c);
   for (const res of s.resources.values()) {
     const [ns, path] = splitId(res.id);
-    const data = typeof res.data === "string" ? res.data : JSON.stringify(res.data, null, 2) + "\n";
+    const data = typeof res.data === "string" ? resolveTokens(res.data) : JSON.stringify(resolveDeep(res.data), null, 2) + "\n";
     files.set(`data/${ns}/${folder(res.registry)}/${path}.json`, data);
   }
   return { files, functionCount: s.functions.size };

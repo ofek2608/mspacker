@@ -67,6 +67,19 @@ function Helper() {
 Untagged functions that are never referenced aren't emitted. Recursion works: a function can
 reference itself with `Function(Self)`.
 
+### Recording order
+
+Referenced functions are recorded one at a time, after the function that references them, not in
+the middle of it. `Function(Helper)` writes the id and queues `Helper`. Long chains of functions
+calling each other therefore don't build up the JavaScript call stack.
+
+`.Run(() => ...)` callbacks are the exception: they run right away, so they see your variables as
+they are at that point in the loop, and a callback with a single command can be inlined.
+
+`fnId()` of an anonymous function returns a placeholder, because its id is a hash of its commands,
+which aren't known yet. The placeholder is replaced with the id in commands, tags and resources,
+so use it in those, not for string processing.
+
 :::note
 The generated `Function` export shadows JavaScript's global `Function` constructor in files that import it.
 :::
