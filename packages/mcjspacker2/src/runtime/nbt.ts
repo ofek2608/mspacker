@@ -82,6 +82,11 @@ export const nbt = {
   stringify: snbt,
 };
 
+/** Which NBT wrapper a value is (`nbt.int(...)` is "num"), if any. Macro arguments are "raw". */
+export function nbtKind(value: unknown): "num" | "arr" | "raw" | undefined {
+  return typeof value === "object" && value !== null ? (value as { [NBT]?: "num" | "arr" | "raw" })[NBT] : undefined;
+}
+
 const BARE_KEY = /^[A-Za-z0-9._+-]+$/;
 
 export function quoteString(s: string): string {

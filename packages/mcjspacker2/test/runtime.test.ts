@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { beforeEach, describe, expect, it } from "vitest";
 import { compactTree } from "../src/codegen/generate.js";
 import { createRoot, literalName } from "../src/runtime/command.js";
-import { __DEV__, __FUNCTION_PREFIX__, __NAMESPACE__, fnId, id, macro, named, resource, tag } from "../src/runtime/index.js";
+import { __DEV__, __FUNCTION_PREFIX__, __NAMESPACE__, fnId, id, macro, named, nbt, resource, tag } from "../src/runtime/index.js";
 import { setParserOverrides } from "../src/runtime/parsers.js";
 import { parseNamespace } from "../src/runtime/naming.js";
 import { collectOutput, resetState, type FnMeta } from "../src/runtime/state.js";
@@ -609,6 +609,35 @@ describe("macro functions", () => {
     expect(build(26)["data/pk/functions/gen/main/hello.mcfunction"]).toBe(
       '$tellraw @a {"text":"$(name)"}\n$tellraw @a {"text":"$(name)"}\n',
     );
+  });
+
+  it("writes text before SNBT text components as JSON, with nbt.raw for JSON written by hand", () => {
+    resetState(parseNamespace("pk:gen"), { version: "1.20.4", packFormat: 26 });
+    function Old() {
+      $.tellraw("@a", "hi");
+      $.tellraw("@a", ["a", { text: "b", clickEvent: { action: "run_command", value: "/say hi" }, skip: undefined }]);
+      $.tellraw("@a", nbt.raw('{"text":"raw","color":"gold"}'));
+    }
+    meta(Old, { file: "main.ts", name: "Old", mcfunction: true });
+    expect(build(26)["data/pk/functions/gen/main/old.mcfunction"]).toBe(
+      'tellraw @a "hi"\n' +
+        'tellraw @a ["a",{"text":"b","clickEvent":{"action":"run_command","value":"/say hi"}}]\n' +
+        'tellraw @a {"text":"raw","color":"gold"}\n',
+    );
+
+    for (const [what, value] of [
+      ["typed numbers", { text: "x", n: nbt.int(1) }],
+      ["bigints", { text: "x", n: 1n }],
+    ] as const) {
+      resetState(parseNamespace("pk:gen"), { version: "1.20.4", packFormat: 26 });
+      const Bad = () => $.tellraw("@a", value);
+      meta(Bad, { file: "main.ts", name: "Bad", mcfunction: true });
+      expect(() => build(26), what).toThrow(/NBT number types .* don't exist in text components before 1\.21\.5/);
+    }
+    resetState(parseNamespace("pk:gen"), { version: "1.20.4", packFormat: 26 });
+    const Nested = () => $.tellraw("@a", { extra: [nbt.raw("{}")] });
+    meta(Nested, { file: "main.ts", name: "Nested", mcfunction: true });
+    expect(() => build(26)).toThrow(/nbt\.raw\(\.\.\.\) only works as a whole text component/);
   });
 
   it("calls macro functions with arguments through the normal function command", () => {

@@ -32,6 +32,11 @@ describe("generate", () => {
     expect(result.files["registries.ts"]).toContain('"block": ');
   });
 
+  it("emits iterable registry id lists", () => {
+    expect(result.files["registries.ts"]).toMatch(/export const registries: .*= \{\n  "[a-z_/]+": \[/);
+    expect(result.files["registries.ts"]).toMatch(/\n  "block": \["[a-z_]+", /);
+  });
+
   it("reports no warnings for vanilla parsers", () => {
     expect(result.warnings).toEqual([]);
   });
@@ -80,6 +85,13 @@ $.sya;
 $.setblock.nope;
 // @ts-expect-error literals are properties, not string arguments
 $.effect("give", "@s", "speed");
+// Text components: the common fields are checked, any other field works (icons, newer fields).
+$.tellraw("@a", { text: "hi", color: "gold", extra: [{ type: "object", sprite: "item/diamond" }], shadow_color: 5 });
+$.tellraw("@a", { text: "x", color: "#ff8800", click_event: { action: "run_command", command: "/say hi" } });
+// @ts-expect-error bold is true or false
+$.tellraw("@a", { bold: "yes" });
+// @ts-expect-error not a color
+$.tellraw("@a", { color: "golden" });
 // Macro arguments fit anywhere, also inside objects; only their names are checked.
 export function WithArgs(args: Macro<"who" | "n" | "name" | "pos">) {
   $.tp(args.who as MacroArg<Selector>, args.pos as MacroArg<Vec3>);

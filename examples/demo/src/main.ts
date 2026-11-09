@@ -13,7 +13,7 @@ export function Tick() {
   $.execute.as("@a").if.score("@s", "kills").matches("10..").run.give("@s", "diamond", 1);
 }
 
-/** @mcfunction */
+/** @mcfunction demo:api/greet */
 export function Greet() {
   $.tellraw("@a", { text: "Hello from TypeScript!", color: "gold", bold: true });
   $.tp("@a", "~ ~10 ~");

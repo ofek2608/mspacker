@@ -14,9 +14,9 @@
  * Projects can add or override entries with `parsers` in mcjs2.config.ts (see defineParser).
  * Unknown parsers fall back to `string`.
  */
-import { snbt, quoteString, type NbtValue } from "./nbt.js";
+import { nbtKind, snbt, quoteString, type NbtValue, type RawSnbt } from "./nbt.js";
 import { fnId } from "./state.js";
-import { hasMacroArg } from "./macro.js";
+import { MacroError } from "./macro.js";
 
 /** An argument type's settings from `commands.json` (like `{ type: "players" }` for entities). */
 export type Props = Record<string, unknown> | undefined;
@@ -202,16 +202,31 @@ function hasTypedNbt(v: unknown): boolean {
 }
 
 /**
- * Text components: JSON before FORMAT_SNBT_TEXT, SNBT after. Plain values are emitted as JSON, which is
- * also valid SNBT, so the same output works on both sides. The *keys* differ though (clickEvent vs
- * click_event), so the type and examples are version-specific.
+ * Text components before FORMAT_SNBT_TEXT: JSON. Macro arguments go in as JSON strings ("$(name)",
+ * through their toJSON); `nbt.raw(...)` as the whole value is JSON written by hand.
+ */
+function legacyTextJson(v: unknown): string {
+  if (nbtKind(v) === "raw") return (v as RawSnbt).text;
+  return JSON.stringify(v, (_key, value: unknown) => {
+    if (typeof value === "bigint" || nbtKind(value) === "num" || nbtKind(value) === "arr") {
+      throw new MacroError("NBT number types (nbt.int, ...) don't exist in text components before 1.21.5. Use a plain number.");
+    }
+    if (nbtKind(value) === "raw") {
+      throw new MacroError("nbt.raw(...) only works as a whole text component before 1.21.5, not inside one.");
+    }
+    return value;
+  });
+}
+
+/**
+ * Text components: JSON before FORMAT_SNBT_TEXT, SNBT after. On new versions plain values are written
+ * as JSON, which is also valid SNBT.
  */
 const textComponent: ParserDef = {
   type: (_p, ctx) => (ctx.packFormat >= FORMAT_SNBT_TEXT ? "TextComponent" : "LegacyTextComponent"),
   test: (v) => isStr(v) || isObj(v),
-  // Before SNBT text, macro arguments go into the JSON as strings ("$(name)").
   serialize: (v, _p, ctx) =>
-    hasTypedNbt(v) && !(ctx.packFormat < FORMAT_SNBT_TEXT && hasMacroArg(v)) ? snbt(v as NbtValue) : JSON.stringify(v),
+    ctx.packFormat < FORMAT_SNBT_TEXT ? legacyTextJson(v) : hasTypedNbt(v) ? snbt(v as NbtValue) : JSON.stringify(v),
   examples: (_p, ctx) => [
     "probe",
     { text: "probe", color: "red", bold: true, extra: [{ text: "!" }] },

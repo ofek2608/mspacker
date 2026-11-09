@@ -252,21 +252,30 @@ export function generate(
     out.join("\n\n") +
     "\n";
 
+  const registryList = Object.entries(registries)
+    .map(([reg, { entries }]) => ({
+      key: JSON.stringify(reg.replace(/^minecraft:/, "")),
+      ids: Object.keys(entries)
+        .map((id) => JSON.stringify(id.replace(/^minecraft:/, "")))
+        .sort(),
+    }))
+    .sort((a, b) => a.key.localeCompare(b.key));
   const registriesTs =
     header +
+    "/** The ids of each registry (without the `minecraft:` prefix). */\n" +
     "export interface RegistryIds {\n" +
-    Object.entries(registries)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([reg, { entries }]) => {
-        const ids = Object.keys(entries)
-          .map((id) => JSON.stringify(id.replace(/^minecraft:/, "")))
-          .sort();
-        return `  ${JSON.stringify(reg.replace(/^minecraft:/, ""))}: ${ids.length ? ids.join(" | ") : "never"};`;
-      })
-      .join("\n") +
+    registryList.map(({ key, ids }) => `  ${key}: ${ids.length ? ids.join(" | ") : "never"};`).join("\n") +
     "\n}\n\n" +
     "/** Registry id, with or without the `minecraft:` prefix. Other namespaces are accepted as plain strings. */\n" +
-    "export type Id<R extends keyof RegistryIds> = RegistryIds[R] | `minecraft:${RegistryIds[R]}` | (string & {});\n";
+    "export type Id<R extends keyof RegistryIds> = RegistryIds[R] | `minecraft:${RegistryIds[R]}` | (string & {});\n\n" +
+    "/**\n" +
+    " * Every id of each registry (without the `minecraft:` prefix), sorted, to iterate over:\n" +
+    " *\n" +
+    " *     for (const item of registries.item) ...\n" +
+    " */\n" +
+    "export const registries: { readonly [R in keyof RegistryIds]: readonly RegistryIds[R][] } = {\n" +
+    registryList.map(({ key, ids }) => `  ${key}: [${ids.join(", ")}],`).join("\n") +
+    "\n};\n";
 
   const treeTs = header + `import type { TreeNode } from "mcjspacker2/runtime";\nexport const tree: TreeNode = ${JSON.stringify(root)};\n`;
 

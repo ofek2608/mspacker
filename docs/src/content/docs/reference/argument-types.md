@@ -80,6 +80,30 @@ $.title("@a").title({ text: "Fight!", color: "red", bold: true });
 
 A plain string works for simple text: `$.tellraw("@a", "Hello")`.
 
+The common fields (`text`, `color`, `bold`, `extra`, `click_event`, ...) are suggested by your editor
+and checked. Any other field the game knows works too, also ones added in newer versions, like icons:
+
+```ts
+$.tellraw("@a", [{ type: "object", sprite: "item/diamond" }, " found!"]);
+```
+
+Your editor can't tell a new field from a misspelled one, and neither can the game: it ignores
+fields it doesn't know, so `{ text: "hi", colr: "red" }` shows "hi" without color. Wrong values of
+fields it knows (`color: "redd"`) are errors when the command runs.
+
+### Before 1.21.5
+
+Older versions write text as JSON, and their field names differ a little (`clickEvent` and
+`hoverEvent`). Objects work the same way, but their fields aren't checked, so look them up in the
+[text format for your version](https://minecraft.wiki/w/Text_component_format). Numbers made with
+`nbt.int(...)` and friends don't exist in JSON, use plain numbers.
+
+To write the JSON yourself, pass it with `nbt.raw`:
+
+```ts
+$.tellraw("@a", nbt.raw('{"text":"Hello","color":"gold"}'));
+```
+
 ## NBT
 
 Objects and arrays are written as NBT:

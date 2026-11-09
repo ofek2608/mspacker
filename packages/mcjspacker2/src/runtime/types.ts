@@ -44,8 +44,14 @@ export type Duration = number | `${number}` | `${number}${"d" | "s" | "t"}`;
 
 /** Text component (1.21.5+): plain text, an object with styling, or a list of them. */
 export type TextComponent = string | TextComponentObject | TextComponent[];
-/** A styled text component (1.21.5+, SNBT form). */
-export interface TextComponentObject {
+/**
+ * A styled text component (1.21.5+): any NBT compound, so every field the game knows works, also
+ * ones added in newer versions (like icons: `{type: "object", sprite: "item/diamond"}`). The common
+ * fields below are suggested and checked.
+ */
+export type TextComponentObject = NbtCompound & TextHints;
+/** The common fields of a text component, for suggestions; any other field works too. */
+export interface TextHints {
   /** Plain text. */
   text?: string;
   /** A translation key, shown in the player's language. */
@@ -61,7 +67,7 @@ export interface TextComponentObject {
   /** An NBT path; shows the value it points to (with `block`, `entity` or `storage`). */
   nbt?: string;
   /** A named color (`gold`) or `#RRGGBB`. */
-  color?: string;
+  color?: ChatColor | `#${string}`;
   /** Bold text. */
   bold?: boolean;
   /** Italic text. */
@@ -82,53 +88,15 @@ export interface TextComponentObject {
   click_event?: NbtCompound;
   /** What shows on hover, e.g. `{action: "show_text", value: "hi"}`. */
   hover_event?: NbtCompound;
-  /** Any other field the game knows. */
-  [key: string]: NbtValue | undefined;
 }
 
-/** Text component for versions before 1.21.5 (JSON form, camelCase event keys). */
-export type LegacyTextComponent = string | LegacyTextComponentObject | LegacyTextComponent[];
-/** A styled text component before 1.21.5 (JSON form, camelCase event names). */
-export interface LegacyTextComponentObject {
-  /** Plain text. */
-  text?: string;
-  /** A translation key, shown in the player's language. */
-  translate?: string;
-  /** Values for the `%s` placeholders of `translate`. */
-  with?: LegacyTextComponent[];
-  /** Shows a score: holder `name` (a selector or name) in `objective`. */
-  score?: { name: string; objective: string };
-  /** Shows the names of the entities a selector finds. */
-  selector?: string;
-  /** Shows the key bound to a control, e.g. `key.jump`. */
-  keybind?: string;
-  /** An NBT path; shows the value it points to (with `block`, `entity` or `storage`). */
-  nbt?: string;
-  /** A named color (`gold`) or `#RRGGBB`. */
-  color?: string;
-  /** Bold text. */
-  bold?: boolean;
-  /** Italic text. */
-  italic?: boolean;
-  /** Underlined text. */
-  underlined?: boolean;
-  /** Struck-through text. */
-  strikethrough?: boolean;
-  /** Randomly changing characters. */
-  obfuscated?: boolean;
-  /** A font id, e.g. `minecraft:alt`. */
-  font?: string;
-  /** Text put into the chat box when shift-clicked. */
-  insertion?: string;
-  /** More components appended after this one, inheriting its style. */
-  extra?: LegacyTextComponent[];
-  /** What happens on click, e.g. `{action: "run_command", value: "/say hi"}`. */
-  clickEvent?: { action: string; value: string };
-  /** What shows on hover, e.g. `{action: "show_text", contents: "hi"}`. */
-  hoverEvent?: { action: string; value?: unknown; contents?: unknown };
-  /** Any other field the game knows. */
-  [key: string]: unknown;
-}
+/**
+ * Text component before 1.21.5, written as JSON: plain text, an object, or a list of them. Fields
+ * aren't checked; see the [text component format](https://minecraft.wiki/w/Text_component_format)
+ * for your version (`{text: "hi", color: "gold", clickEvent: {action: "run_command", value: "/say hi"}}`).
+ * To write JSON yourself, pass `nbt.raw('{"text":"hi"}')`.
+ */
+export type LegacyTextComponent = string | { [key: string]: unknown } | LegacyTextComponent[];
 
 /** A TS function (recorded into its own mcfunction) or a function id / `#tag` string. */
 export type FnRef = ((...args: never[]) => unknown) | string;
