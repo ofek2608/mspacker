@@ -8,7 +8,7 @@ import { forLoop, onlyIf, returnInt, setInt } from "./io.js";
  * The game stops a run after 65,536 commands, which is enough for n up to 18.
  * @mcfunction
  */
-export function FibRec(args: Macro<{ n: number }>) {
+export function FibRec(args: Macro<"n">) {
   onlyIf(intIn(args.n, { max: 1 })).run.return.run.compute.default.integer(constant(args.n));
   // The first result waits in storage while the second call runs. Calls that are still running all
   // have different n, so `fib.p<n>` can't be overwritten by a deeper call.
@@ -23,7 +23,7 @@ export function FibRec(args: Macro<{ n: number }>) {
  * fib(n) with a loop: exact up to fib(46), the largest that fits in an int.
  * @mcfunction
  */
-export function Fib(args: Macro<{ n: number }>) {
+export function Fib(args: Macro<"n">) {
   setInt("fib.a", 0);
   setInt("fib.b", 1);
   forLoop("i", args.n, {}, () => {
@@ -40,6 +40,6 @@ const PHI = (1 + Math.sqrt(5)) / 2;
  * fib(n) in one command: round(φⁿ / √5). Floats in game have about 7 digits, so it drifts past n ≈ 30.
  * @mcfunction
  */
-export function FibBinet(args: Macro<{ n: number }>) {
+export function FibBinet(args: Macro<"n">) {
   returnInt(toInt(round(div(pow(PHI, args.n), sqrt(5)))));
 }

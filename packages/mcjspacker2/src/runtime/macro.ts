@@ -10,33 +10,46 @@
 
 const NBT = Symbol.for("mcjspacker2.nbt");
 const MACRO = Symbol.for("mcjspacker2.macro");
-declare const FITS: unique symbol;
+declare const IS_MACRO: unique symbol;
+declare const AS: unique symbol;
 
 /**
- * A macro argument: replaced in game by the value the function is called with. Nothing can check
- * those values, so `T` is just the type you declare for it: where it can be used (a `boolean` fits
- * where commands take a boolean). To put it into text, use `` macro`...` ``.
+ * A macro argument, `$(name)`: text the game fills in with the value the function is called with.
+ * It fits wherever a value goes; nothing checks that the value will fit there, that's up to you.
+ * To put it into text, use `` macro`...` ``.
+ *
+ * Where a command takes different kinds of values at the same place (`tp` takes an entity or a
+ * position), say which one it is: `$.tp("@s", args.to as MacroArg<Vec3>)`.
  */
-export interface MacroArg<T> {
-  /** @internal The type it fits (only for TypeScript). */
-  readonly [FITS]: T;
+export interface MacroArg<T = unknown> {
+  /** @internal */
+  readonly [IS_MACRO]: true;
+  /** @internal What you said it is (`as MacroArg<Vec3>`), for TypeScript only. */
+  readonly [AS]: T;
   /** The argument in double quotes, for string values inside NBT: `"$(name)"`. */
   readonly quoted: MacroArg<T>;
 }
 
-/** The parameter of a macro function: `function Greet(args: Macro<{ name: string }>)`. */
-export type Macro<T> = { readonly [K in keyof T]-?: MacroArg<T[K]> };
+/** The parameter of a macro function, listing its argument names: `function Greet(args: Macro<"name" | "count">)`. */
+export type Macro<Names extends string> = { readonly [K in Names]: MacroArg };
+
+/** Inside values: any field or list entry may be a macro argument. */
+type MacroInside<T> = T extends (...args: never[]) => unknown
+  ? T
+  : T extends readonly (infer E)[]
+    ? MacroValue<E>[]
+    : T extends object
+      ? { [K in keyof T]: MacroValue<T[K]> }
+      : T;
 
 /** `T`, where any value, also inside objects and lists, may be a macro argument. */
-export type MacroValue<T> =
-  | MacroArg<T>
-  | (T extends (...args: never[]) => unknown
-      ? T
-      : T extends readonly (infer E)[]
-        ? MacroValue<E>[]
-        : T extends object
-          ? { [K in keyof T]: MacroValue<T[K]> }
-          : T);
+export type MacroValue<T> = MacroArg | MacroInside<T>;
+
+/**
+ * Like `MacroValue`, for places where a command takes different kinds of values: a macro argument
+ * there must say which kind it is (`args.to as MacroArg<Vec3>`).
+ */
+export type TypedMacroValue<T> = MacroArg<T> | MacroInside<T>;
 
 // ---------------------------------------------------------------- who is using markers right now
 
@@ -125,7 +138,8 @@ function marker(info: MarkerInfo, text: string, json = text): MarkerObject {
   const m = { [NBT]: "raw", [MACRO]: info } as unknown as MarkerObject;
   const asText = () => {
     throw new MacroError(
-      `${info.label} can't become plain text. Use the macro template: $(macro\`tp @s \${args.x}\`) or $.say(macro\`hi \${args.name}\`).`,
+      `${info.label} can't become plain text. Pass it directly ($.kill(args.target)), or build a value from it with the ` +
+        "macro template: $.kill(macro`@e[tag=${args.team}]`), $.say(macro`hi ${args.name}`).",
     );
   };
   Object.defineProperties(m, {
@@ -184,19 +198,25 @@ export function macroArgs(owner: object, where: string): unknown {
 }
 
 /**
- * Text made from macro arguments: `` $(macro`tp @s ${args.x} ${args.y} ${args.z}`) ``. The result is
- * itself a macro argument, so it fits anywhere a value goes; it isn't type-checked, that's up to you.
+ * One value built from macro arguments and other text, for when an argument is only part of it:
+ *
+ *     $.kill(macro`@e[tag=${args.team}]`);                       // a selector
+ *     $.data.remove.storage("mypack:db", macro`players.${args.name}`); // a storage path
+ *     $.say(macro`${args.player} won ${args.count} points`);    // a sentence
+ *
+ * The result is itself a macro argument, so it fits anywhere a value goes. When an argument is the
+ * whole value, pass it directly: `$.kill(args.target)`.
  * Other values (strings, numbers) are written as they are. Without macro arguments it's a plain string.
  */
-export function macro(strings: TemplateStringsArray, ...values: unknown[]): MacroArg<any> {
+export function macro(strings: TemplateStringsArray, ...values: unknown[]): MacroArg {
   const markers = values.filter(isMacroArg) as unknown as MarkerObject[];
   let text = strings[0]!;
   values.forEach((v, i) => {
     text += (isMacroArg(v) ? (v as unknown as { [RAW]: string })[RAW] : String(v)) + strings[i + 1]!;
   });
-  if (!markers.length) return text as unknown as MacroArg<any>;
+  if (!markers.length) return text as unknown as MacroArg;
   const info = markers[0]![MACRO];
   const other = markers.find((m) => m[MACRO].owner !== info.owner);
   if (other) throw new MacroError(`macro\`${text}\` mixes macro arguments of ${info.ownerName} and ${other[MACRO].ownerName}.`);
-  return markerWithQuoted({ owner: info.owner, ownerName: info.ownerName, label: `macro\`${text}\``, verbatim: true }, text) as unknown as MacroArg<any>;
+  return markerWithQuoted({ owner: info.owner, ownerName: info.ownerName, label: `macro\`${text}\``, verbatim: true }, text) as unknown as MacroArg;
 }

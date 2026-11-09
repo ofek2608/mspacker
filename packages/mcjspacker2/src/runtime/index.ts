@@ -18,7 +18,7 @@ function noMacros(value: unknown, what: string): void {
 }
 
 export * from "./types.js";
-export { macro, type Macro, type MacroArg, type MacroValue } from "./macro.js";
+export { macro, type Macro, type MacroArg, type MacroValue, type TypedMacroValue } from "./macro.js";
 export { nbt, snbt, type RawSnbt, type Suffix, type TypedArray, type TypedNumber } from "./nbt.js";
 export { createRoot, literalName, type TreeNode } from "./command.js";
 
@@ -49,8 +49,8 @@ packInfo().listeners.add((info) => {
  * arguments: `` id(macro`rewards/${args.kind}`) `` is `mypack:rewards/$(kind)`.
  */
 export function id(path: string): string;
-export function id(path: MacroArg<any>): MacroArg<any>;
-export function id(path: string | MacroArg<any>): string | MacroArg<any> {
+export function id(path: MacroArg): MacroArg;
+export function id(path: string | MacroArg): string | MacroArg {
   const ns = packInfo().value.namespace;
   return isMacroArg(path) ? macro`${ns}:${path}` : `${ns}:${path}`;
 }

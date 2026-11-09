@@ -10,7 +10,7 @@ import { forLoop, onlyIf, returnInt, setFloat, setInt, setScore } from "./io.js"
  * Greatest common divisor (Euclid).
  * @mcfunction
  */
-export function Gcd(args: Macro<{ a: number; b: number }>) {
+export function Gcd(args: Macro<"a" | "b">) {
   onlyIf(intIn(args.b, { min: 0, max: 0 })).run.return.run.compute.default.integer(abs(args.a));
   $.data.modify.storage(STORAGE, "gcd").set.value({ a: args.b, b: 0 });
   setInt("gcd.b", floorMod(args.a, args.b));
@@ -21,7 +21,7 @@ export function Gcd(args: Macro<{ a: number; b: number }>) {
  * Least common multiple.
  * @mcfunction
  */
-export function Lcm(args: Macro<{ a: number; b: number }>) {
+export function Lcm(args: Macro<"a" | "b">) {
   $.execute.store.result.score("#gcd", OBJECTIVE).run.function(Gcd, { a: args.a, b: args.b });
   onlyIf(intIn(score("#gcd"), { min: 0, max: 0 })).run.return(0);
   returnInt(mul(div(abs(args.a), score("#gcd")), abs(args.b)));
@@ -31,7 +31,7 @@ export function Lcm(args: Macro<{ a: number; b: number }>) {
  * 1 if n is prime, else 0 (trial division up to √n).
  * @mcfunction
  */
-export function IsPrime(args: Macro<{ n: number }>) {
+export function IsPrime(args: Macro<"n">) {
   onlyIf(intIn(args.n, { max: 1 })).run.return(0);
   setInt("prime.ok", 1);
   forLoop("d", add(toInt(sqrt(toFloat(args.n))), 1), { n: args.n }, (a) => {
@@ -44,7 +44,7 @@ export function IsPrime(args: Macro<{ n: number }>) {
  * baseᵉˣᵖ mod m, by squaring (m up to 46340, so products fit in an int).
  * @mcfunction
  */
-export function PowMod(args: Macro<{ base: number; exp: number; mod: number }>) {
+export function PowMod(args: Macro<"base" | "exp" | "mod">) {
   onlyIf(intIn(args.exp, { max: 0 })).run.return.run.compute.default.integer(floorMod(1, args.mod));
   $.data.modify.storage(STORAGE, "powmod.call").set.value({ base: args.base, mod: args.mod, exp: 0 });
   setInt("powmod.call.exp", floorDiv(args.exp, 2));
@@ -57,7 +57,7 @@ export function PowMod(args: Macro<{ base: number; exp: number; mod: number }>) 
  * ⌊√n⌋, exact for every int.
  * @mcfunction
  */
-export function IntSqrt(args: Macro<{ n: number }>) {
+export function IntSqrt(args: Macro<"n">) {
   setScore("#r", toInt(floor(sqrt(toFloat(args.n)))));
   // Floats can be off by one for big n. Squares can overflow, so compare r with n / r instead:
   // step down if r > n / r, up if r + 1 <= n / (r + 1).
@@ -70,7 +70,7 @@ export function IntSqrt(args: Macro<{ n: number }>) {
  * `demo:math out` = √(x² + y²).
  * @mcfunction
  */
-export function Hypot(args: Macro<{ x: number; y: number }>) {
+export function Hypot(args: Macro<"x" | "y">) {
   setFloat("out", length(args.x, args.y));
 }
 
@@ -78,7 +78,7 @@ export function Hypot(args: Macro<{ x: number; y: number }>) {
  * `demo:math out` = a + (b - a)·t.
  * @mcfunction
  */
-export function Lerp(args: Macro<{ a: number; b: number; t: number }>) {
+export function Lerp(args: Macro<"a" | "b" | "t">) {
   setFloat("out", add(args.a, mul(sub(args.b, args.a), args.t)));
 }
 
@@ -86,6 +86,6 @@ export function Lerp(args: Macro<{ a: number; b: number; t: number }>) {
  * `demo:math out` = x limited to lo..hi.
  * @mcfunction
  */
-export function Clamp(args: Macro<{ x: number; lo: number; hi: number }>) {
+export function Clamp(args: Macro<"x" | "lo" | "hi">) {
   setFloat("out", max(args.lo, min(args.x, args.hi)));
 }

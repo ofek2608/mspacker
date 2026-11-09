@@ -37,18 +37,18 @@ let loops = 0;
  * Each loop keeps its counter in storage (`demo:math loop.<name><n>`) and calls itself for the next
  * step, so the commands run one after another, never nested inside each other.
  */
-export function forLoop<V extends string, P extends Record<string, MacroArg<number>> = {}>(
+export function forLoop<V extends string, P extends Record<string, MacroArg> = {}>(
   name: V,
   end: Num,
   pass: P,
-  body: (args: Macro<Record<V, number>> & P) => void,
+  body: (args: Macro<V> & P) => void,
   start: Num = 0,
 ) {
   const frame = `loop.${name}${loops++}`;
   // In an object so it stays anonymous: a `const step = ...` would name every loop "step".
   const loop = {
-    step: (args: Macro<Record<V | "end", number>>) => {
-      body(args as Macro<Record<V, number>> & P);
+    step: (args: Macro<V | "end">) => {
+      body(args as Macro<V> & P);
       setInt(`${frame}.${name}`, add(args[name], 1));
       // Next step while name + 1 < end.
       onlyIf(intIn(sub(args.end, args[name]), { min: 2 })).run.function(loop.step).with.storage(STORAGE, frame);

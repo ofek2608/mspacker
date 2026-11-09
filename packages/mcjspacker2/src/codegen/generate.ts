@@ -103,13 +103,14 @@ export function generate(
 
   const join = (a: string, b: string) => (a ? `${a} ${b}` : b);
 
-  function renderParams(params: Param[]): string {
+  /** `typed`: positions where other signatures take a different type (macro arguments must say which). */
+  function renderParams(params: Param[], typed: Set<number> = new Set()): string {
     const seen = new Map<string, number>();
     return params
-      .map((p) => {
+      .map((p, i) => {
         const n = seen.get(p.name) ?? 0;
         seen.set(p.name, n + 1);
-        return `${safeIdent(n ? `${p.name}${n + 1}` : p.name)}: Arg<${p.type}>`;
+        return `${safeIdent(n ? `${p.name}${n + 1}` : p.name)}: ${typed.has(i) ? "TypedArg" : "Arg"}<${p.type}>`;
       })
       .join(", ");
   }
@@ -120,7 +121,7 @@ export function generate(
 
     if (node === root) {
       lines.push(
-        "  /** A command line as-is: `$(\"say hi\")`, or built from macro arguments: `$(macro`say ${args.message}`)`. */",
+        "  /** A command line as-is: `$(\"say hi\")`, also made with `` macro`...` `` in macro functions. */",
         "  (command: string | R.MacroArg<unknown>): void;",
       );
     } else if (node.x) {
@@ -150,10 +151,20 @@ export function generate(
     // TS picks the first matching overload, and catch-all string types (selectors, ids) also accept
     // positions: list signatures with fewer catch-all parameters first, so `"~ ~1 ~"` picks Vec3.
     const broad = (sig: { params: Param[] }) => sig.params.filter((p) => BROAD_TYPE.test(p.type)).length;
-    for (const sig of [...sigs.values()].sort((a, b) => broad(a) - broad(b))) {
+    // A macro argument fits any type, so where signatures of the same length take different types
+    // at a position, a plain one would make TS pick the first signature and maybe the wrong branch.
+    // There, macro arguments must say what they are (`args.to as MacroArg<Vec3>`).
+    const all = [...sigs.values()];
+    const typedAt = (sig: (typeof all)[number]) =>
+      new Set(
+        sig.params
+          .map((p, i) => (all.some((o) => o !== sig && o.params.length === sig.params.length && o.params[i]!.type !== p.type) ? i : -1))
+          .filter((i) => i >= 0),
+      );
+    for (const sig of all.sort((a, b) => broad(a) - broad(b))) {
       lines.push(
         `  /** ${sig.syntax.map((x) => `\`${x}\``).join(" or ")} */`,
-        `  (${renderParams(sig.params)}): ${[...sig.returns].join(" & ")};`,
+        `  (${renderParams(sig.params, typedAt(sig))}): ${[...sig.returns].join(" & ")};`,
       );
     }
 
@@ -216,8 +227,12 @@ export function generate(
     `import { tree } from "./tree.js";\n\n` +
     usedTypeAliases(out.join("\n")) +
     "\n\n" +
-    "/** A value where anything, also inside objects and lists, may be a macro argument of a fitting type. */\n" +
+    "/** A value where anything, also inside objects and lists, may be a macro argument. */\n" +
     "type Arg<T> = R.MacroValue<T>;\n\n" +
+    (/\bTypedArg</.test(out.join("\n"))
+      ? "/** Where the command takes different kinds of values: a macro argument must say which (`args.to as MacroArg<Vec3>`). */\n" +
+        "type TypedArg<T> = R.TypedMacroValue<T>;\n\n"
+      : "") +
     "/** A string argument written as a property: `.red` for `(\"red\")`. */\n" +
     "type PropArg<T, Next> = { readonly [K in Extract<T, string>]: Next };\n\n" +
     "/** Names every JavaScript function has, so they can't be values written as properties. */\n" +

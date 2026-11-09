@@ -7,9 +7,9 @@ A function with a parameter is a [macro function](https://minecraft.wiki/w/Funct
 the game fills in the values when it's called. Macros need Minecraft 1.20.2 or newer.
 
 ```ts
-import { $, macro, type Macro, type Selector } from "#mc";
+import { $, macro, type Macro } from "#mc";
 
-export function Reward(args: Macro<{ player: Selector; item: string; count: number }>) {
+export function Reward(args: Macro<"player" | "item" | "count">) {
   $.give(args.player, args.item, args.count);
   $.say(macro`gave ${args.count} ${args.item}`);
 }
@@ -17,8 +17,9 @@ export function Reward(args: Macro<{ player: Selector; item: string; count: numb
 // $say gave $(count) $(item)
 ```
 
-Use `args.name` wherever the value goes, also inside objects like NBT and text components. The
-commands that use it are written as macro lines automatically.
+`Macro<...>` lists the argument names, so a typo like `args.cuont` is an error. Use `args.name`
+wherever the value goes, also inside objects like NBT and text components. The commands that use it
+are written as macro lines automatically.
 
 ## Calling a macro function
 
@@ -36,37 +37,61 @@ export function Main() {
 
 If a value is missing, the game doesn't run the function at all.
 
-## Types
+## What the game puts in
 
-The types in `Macro<{ ... }>` say where each value can be used: `args.count` fits where a command
-takes a number, `args.player` where it takes a selector. They can't be checked in game, so they're
-up to you. Values are put into the command as text: a string without quotes, a number without its
-suffix (`1.5d` becomes `1.5`), and `true` becomes `1`. So for a `boolean`, pass the text `"true"` or
-`"false"`.
+A macro argument is text the game fills in, so it fits anywhere and nothing checks that the value
+will make a valid command: that's up to you. Values are put in as text: a string without quotes, a
+number without its suffix (`1.5d` becomes `1.5`), and `true` becomes `1`. So for an argument that
+needs `true` or `false`, pass those as text.
 
-## Building text from arguments
+## Building values from arguments
 
-To put arguments into text, use the `macro` template:
+When an argument is the whole value, pass it as it is: `$.kill(args.target)`. When it's only part
+of a value, build the value with the `macro` template:
 
 ```ts
 import { $, macro, type Macro } from "#mc";
 
-export function Go(args: Macro<{ x: number; z: number; destination: string }>) {
-  $.tp("@s", macro`${args.x} 100 ${args.z}`);   // $tp @s $(x) 100 $(z)
-  $(macro`tp @s ${args.destination}`);           // $tp @s $(destination)
+export function Score(args: Macro<"team" | "player" | "points">) {
+  // a selector
+  $.effect.give(macro`@a[team=${args.team}]`, "glowing", 5);
+  // a storage path
+  $.data.modify.storage("mypack:scores", macro`players.${args.player}`).set.value(args.points);
+  // a sentence
+  $.say(macro`${args.player} scored ${args.points} for ${args.team}`);
+}
+// $effect give @a[team=$(team)] glowing 5
+// $data modify storage mypack:scores players.$(player) set value $(points)
+// $say $(player) scored $(points) for $(team)
+```
+
+What `macro` makes is a macro argument too, so it fits anywhere a value goes. A normal template
+string can't use arguments (`` `@a[team=${args.team}]` `` stops the build with a hint), and text you
+write yourself never becomes a macro, even if it contains `$(...)`.
+
+## When a command takes different kinds of values
+
+Some commands take different kinds of values at the same place: `tp @s <here>` takes a position
+or an entity to teleport to. A macro argument could be either, so TypeScript asks you to say which:
+
+```ts
+import { $, type Macro, type MacroArg, type Vec3 } from "#mc";
+
+export function Warp(args: Macro<"to">) {
+  $.tp("@s", args.to);                    // error: is it a position or an entity?
+  $.tp("@s", args.to as MacroArg<Vec3>);  // $tp @s $(to)
 }
 ```
 
-What `macro` makes fits anywhere a value goes, without type checks: it's up to you that it forms a
-valid command. A normal template string can't use arguments (`` `tp @s ${args.x}` `` stops the
-build with a hint), and text you write yourself never becomes a macro, even if it contains `$(...)`.
+The error mentions `TypedArg<...>` with the type it expected. Any argument type from the
+[API reference](/reference/api/library-mc/readme/) works here (`Vec3`, `Selector`, `Rotation`, ...).
 
 ## Text in NBT and text components
 
 A value is put in as-is, so a string inside NBT or a text component needs quotes. Use `.quoted`:
 
 ```ts
-export function Welcome(args: Macro<{ name: string }>) {
+export function Welcome(args: Macro<"name">) {
   $.tellraw("@a", { text: args.name.quoted, color: "gold" });   // {text:"$(name)",color:"gold"}
 }
 ```

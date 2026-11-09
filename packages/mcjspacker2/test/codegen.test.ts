@@ -19,7 +19,7 @@ describe("generate", () => {
 
   it("merges sibling arguments of the same type", () => {
     expect(commands).toContain("/** `tp <destination>` or `tp <targets>` */");
-    expect(commands).toMatch(/\(destination: Arg<Selector>\): N\d+ & N\d+;/);
+    expect(commands).toMatch(/\(destination: TypedArg<Selector>\): N\d+ & N\d+;/);
   });
 
   it("uses the target's type for redirects", () => {
@@ -46,7 +46,7 @@ describe("generate", () => {
       for (const [name, content] of Object.entries(result.files)) writeFileSync(join(gen, name), content);
       writeFileSync(
         join(dir, "use.ts"),
-        `import { $, fnId, macro, type Macro, type Selector } from "./gen/index.js";
+        `import { $, fnId, macro, type Macro, type MacroArg, type Selector, type Vec3 } from "./gen/index.js";
 export function Main() {
   $.tp("@a", "0 ~1 ~2");
   $.tp("@a")("^ ^1 ^2");
@@ -80,18 +80,25 @@ $.sya;
 $.setblock.nope;
 // @ts-expect-error literals are properties, not string arguments
 $.effect("give", "@s", "speed");
-// Macro arguments: typed where they're used, also inside objects; macro\`...\` text fits anywhere.
-export function WithArgs(args: Macro<{ who: Selector; n: number; name: string; pos: string }>) {
-  $.tp(args.who, "0 0 0");
+// Macro arguments fit anywhere, also inside objects; only their names are checked.
+export function WithArgs(args: Macro<"who" | "n" | "name" | "pos">) {
+  $.tp(args.who as MacroArg<Selector>, args.pos as MacroArg<Vec3>);
   $.tellraw(args.who, { text: args.name, extra: [{ text: args.name.quoted }] });
   $.setblock(macro\`\${args.n} 64 \${args.n}\`, "stone");
+  $.scoreboard.players.set(args.who, "kills", args.n);
   $(macro\`say \${args.name}\`);
-  // @ts-expect-error a number doesn't fit a selector
-  $.tp(args.n, "0 0 0");
-  // @ts-expect-error a string doesn't fit a position
-  $.setblock(args.pos, "stone");
-  // @ts-expect-error a number doesn't fit a text field
-  $.tellraw(args.who, { text: args.n });
+  // Where a command takes different kinds of values (tp <location> / <targets>), a macro argument
+  // must say which it is.
+  // @ts-expect-error tp takes an entity or a position here
+  $.tp(args.who);
+  // @ts-expect-error same for the second value (a position or an entity to teleport to)
+  $.tp("@s", args.pos);
+  $.tp(args.who as MacroArg<Selector>)("0 0 0");
+  $.tp(args.who as MacroArg<Selector>, args.pos as MacroArg<Vec3>).facing.entity("@p");
+  // @ts-expect-error a number is neither
+  $.tp(args.who as MacroArg<number>);
+  // @ts-expect-error not one of the declared names
+  $.say(args.nope);
 }
 `,
       );

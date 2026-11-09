@@ -55,7 +55,7 @@ describe("user-defined parsers", () => {
   it("override types in codegen", () => {
     setParserOverrides({ "minecraft:vec3": { type: "MyVec" } });
     const out = generate(commands, registries, { version: "t", packFormat: 108 }).files["commands.ts"]!;
-    expect(out).toContain("(location: Arg<MyVec>): N");
+    expect(out).toContain("(location: TypedArg<MyVec>): N");
   });
 
   it("accept version-dependent type functions and silence unknown-parser warnings", () => {

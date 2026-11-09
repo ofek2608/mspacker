@@ -5,9 +5,9 @@
 // Values can be numbers, other expressions, or macro arguments (`args.n`).
 import type { MacroArg, NbtCompound } from "#mc";
 
-export type Num = number | NbtCompound | MacroArg<number>;
+export type Num = number | NbtCompound | MacroArg;
 /** A storage path; build one with macro arguments using `` macro`m[${args.i}]` ``. */
-export type Path = string | MacroArg<any>;
+export type Path = string | MacroArg;
 
 /** The storage every math function reads from and writes to. */
 export const STORAGE = "demo:math";

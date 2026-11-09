@@ -25,7 +25,7 @@ export function buildChance() {
 }
 
 /** Count one result k: bump counts[k] and grow bar k. */
-function Count(args: Macro<{ k: number }>) {
+function Count(args: Macro<"k">) {
   const path = macro`showcase.coins.counts[${args.k}]`;
   $.data.modify.storage(STORAGE, path).set.compute.default.integer(add(at(path), 1));
 }

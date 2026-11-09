@@ -172,7 +172,7 @@ export const degrees = (x: Num, path: string) => setFloat(path, mul(x, 180 / PI)
 
 // ---------------------------------------------------------------- in-game: result in `demo:math out`
 
-type X = Macro<{ x: number }>;
+type X = Macro<"x">;
 
 /** @mcfunction */
 export function Sin(args: X) {
@@ -239,7 +239,7 @@ export function Acos(args: X) {
   acos(args.x, "out");
 }
 /** @mcfunction */
-export function Atan2(args: Macro<{ y: number; x: number }>) {
+export function Atan2(args: Macro<"y" | "x">) {
   atan2(args.y, args.x, "out");
 }
 /** @mcfunction */

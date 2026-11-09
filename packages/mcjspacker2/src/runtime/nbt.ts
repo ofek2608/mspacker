@@ -43,7 +43,7 @@ export type NbtValue =
   | TypedNumber
   | TypedArray
   | RawSnbt
-  | MacroArg<unknown>
+  | MacroArg
   | NbtValue[]
   | { [key: string]: NbtValue | undefined };
 /** An NBT compound: `{ key: value }`. */

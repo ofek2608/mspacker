@@ -604,7 +604,7 @@ describe("macro functions", () => {
       $(`tp @s ${args.x}`);
     }
     meta(Main, { file: "main.ts", name: "Main", mcfunction: true });
-    expect(() => build()).toThrow(/args\.x can't become plain text\. Use the macro template/);
+    expect(() => build()).toThrow(/args\.x can't become plain text\. Pass it directly.*macro template/);
   });
 
   it("never treats plain text as a macro, even with $(...) in it", () => {

@@ -13,7 +13,7 @@ import {
 } from "./expr.js";
 import { forLoop, onlyIf, setFloat, setInt } from "./io.js";
 
-type Index = number | MacroArg<number>;
+type Index = number | MacroArg;
 
 const mat = (r: string) => `mat.${r}`;
 const vec = (v: string) => `vec.${v}`;
@@ -196,10 +196,10 @@ export function trace(a: string, path: string) {
 }
 
 /** Swap rows k and p of matrix `r` (k and p from storage `with`). */
-const swaps = new Map<string, (args: Macro<{ k: number; p: number }>) => void>();
+const swaps = new Map<string, (args: Macro<"k" | "p">) => void>();
 function swapRows(r: string) {
   if (!swaps.has(r)) {
-    swaps.set(r, (args: Macro<{ k: number; p: number }>) => {
+    swaps.set(r, (args: Macro<"k" | "p">) => {
       $.data.modify.storage(STORAGE, "linalg.row").set.from.storage(STORAGE, macro`${mat(r)}.m[${args.k}]`);
       $.data.modify.storage(STORAGE, macro`${mat(r)}.m[${args.k}]`).set.from.storage(STORAGE, macro`${mat(r)}.m[${args.p}]`);
       $.data.modify.storage(STORAGE, macro`${mat(r)}.m[${args.p}]`).set.from.storage(STORAGE, "linalg.row");
@@ -212,7 +212,7 @@ function swapRows(r: string) {
  * Partial pivoting for column k of `work`: finds the row p ≥ k with the largest |value| and swaps it
  * into row k (in `also` too). Leaves `linalg.swap.k/p` and `linalg.best` (the pivot's size).
  */
-function pivot(work: string, n: Num, k: MacroArg<number>, also?: string) {
+function pivot(work: string, n: Num, k: MacroArg, also?: string) {
   $.data.modify.storage(STORAGE, "linalg.swap").set.value({ k, p: k });
   setFloat("linalg.best", abs(at(cell(work, k, k))));
   forLoop("i", n, { k }, (x) => {
@@ -322,7 +322,7 @@ export function MatMul() {
   matMul("A", "B", "C");
 }
 /** @mcfunction */
-export function MatScale(args: Macro<{ k: number }>) {
+export function MatScale(args: Macro<"k">) {
   matScale("A", args.k, "C");
 }
 /** @mcfunction */
@@ -330,11 +330,11 @@ export function Transpose() {
   transpose("A", "C");
 }
 /** @mcfunction */
-export function Identity(args: Macro<{ n: number }>) {
+export function Identity(args: Macro<"n">) {
   identity("A", args.n);
 }
 /** @mcfunction */
-export function MatPow(args: Macro<{ e: number }>) {
+export function MatPow(args: Macro<"e">) {
   matPow("A", args.e, "C");
 }
 /** `demo:math out` = det(A). @mcfunction */
@@ -366,7 +366,7 @@ export function VecSub() {
   vecSub("U", "V", "W");
 }
 /** @mcfunction */
-export function VecScale(args: Macro<{ k: number }>) {
+export function VecScale(args: Macro<"k">) {
   vecScale("U", args.k, "W");
 }
 /** `demo:math out` = U · V. @mcfunction */
