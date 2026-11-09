@@ -1,4 +1,4 @@
-import { $, __DEV__, fnId, tag } from "#mc";
+import { $, __DEV__, fnId, named, tag } from "#mc";
 import { StartRound } from "./combat/arena.js";
 
 /** @load */
@@ -39,6 +39,14 @@ function Helper() {
 /** @mcfunction custom/renamed */
 export function WeirdName() {
   $.say("I live at demo:generated/custom/renamed");
+}
+
+// One function per kit, each with a name players can run: /function demo:api/kit/archer
+const KITS = { warrior: ["iron_sword", "shield"], archer: ["bow", "arrow"] } as const;
+for (const [kit, items] of Object.entries(KITS)) {
+  named(`demo:api/kit/${kit}`, () => {
+    for (const item of items) $.give("@s", item);
+  });
 }
 
 // Build-time JS: loops unroll into commands.

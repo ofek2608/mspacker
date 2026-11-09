@@ -19,6 +19,13 @@ describe("instrument", () => {
     expect(run(`/** @dev @load */\nfunction Foo() {}\n`)).toContain(`"load":true,"dev":true`);
   });
 
+  it("hints object keys, not computed ones", () => {
+    const out = run(`export function F() {\n  return { onClick: () => 1, [k]: () => 2, "on-hover": () => 3 };\n}\n`);
+    expect(out).toContain(`onClick: __mcjs_w(() => 1, {"file":"dir/file.ts","hint":"onClick","line":2})`);
+    expect(out).toContain(`[k]: __mcjs_w(() => 2, {"file":"dir/file.ts","line":2})`);
+    expect(out).toContain(`"on-hover": __mcjs_w(() => 3, {"file":"dir/file.ts","hint":"on-hover","line":2})`);
+  });
+
   it("reads tags only at the start of a line or after another tag, never in prose or code", () => {
     expect(parseTags("* Runs before the @tick handler. @mcfunction ")).toEqual({});
     expect(parseTags("*\n * Like `@load`, but later.\n * @mcfunction\n ")).toEqual({ mcfunction: true });
@@ -40,9 +47,10 @@ describe("instrument", () => {
       `export function Outer() {\n  function inner() {}\n  const step = () => 1;\n  const named = function fn() {};\n}\nconst top = function own() {};\n`,
     );
     expect(out).toContain(`;__mcjs_m(Outer, {"file":"dir/file.ts","name":"Outer","line":1});`);
-    expect(out).toContain(`;__mcjs_m(inner, {"file":"dir/file.ts","line":2});`);
-    expect(out).toContain(`const step = __mcjs_w(() => 1, {"file":"dir/file.ts","line":3})`);
-    expect(out).toContain(`const named = __mcjs_w(function fn() {}, {"file":"dir/file.ts","line":4})`);
+    // Nested ones only get a hint for their anonymous name.
+    expect(out).toContain(`;__mcjs_m(inner, {"file":"dir/file.ts","hint":"inner","line":2});`);
+    expect(out).toContain(`const step = __mcjs_w(() => 1, {"file":"dir/file.ts","hint":"step","line":3})`);
+    expect(out).toContain(`const named = __mcjs_w(function fn() {}, {"file":"dir/file.ts","hint":"fn","line":4})`);
     expect(out).toContain(`{"file":"dir/file.ts","name":"own","line":6}`);
   });
 

@@ -8,7 +8,7 @@
  * @packageDocumentation
  * @module Library (#mc)
  */
-import { addResource, addTag, devFlag, fnId as functionId, packInfo } from "./state.js";
+import { addResource, addTag, devFlag, fnId as functionId, nameFunction, packInfo } from "./state.js";
 import type { FnRef } from "./types.js";
 import { hasMacroArg, isMacroArg, macro, MacroError, type MacroArg } from "./macro.js";
 
@@ -68,6 +68,25 @@ export function tag(registry: string, id: string, values: (FnRef | string)[], op
 export function resource(registry: string, id: string, data: unknown): void {
   noMacros(data, `${registry} "${id}"`);
   addResource(registry, id, data);
+}
+
+/**
+ * Give a function a fixed name, so players and other packs can run it: a path under your function
+ * prefix (`"tools/reset"` is `mypack:generated/tools/reset`), or a full id. Use a full id to put
+ * the functions people should run where they're easy to find, outside the generated folder:
+ *
+ *     named("mypack:api/reset", () => {
+ *       $.kill("@e[tag=mypack]");
+ *     });
+ *     // /function mypack:api/reset
+ *
+ * It's written to the pack even if nothing calls it, like `@mcfunction`. Inside a loop or a helper,
+ * give each copy its own name (`` named(`mypack:api/give/${item}`, ...) ``); the same name twice is
+ * only allowed when both have the same commands. Returns `fn`.
+ */
+export function named<F extends FnRef & Function>(id: string, fn: F): F {
+  nameFunction(fn, id);
+  return fn;
 }
 
 /**

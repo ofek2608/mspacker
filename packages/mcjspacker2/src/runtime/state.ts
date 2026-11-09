@@ -24,6 +24,8 @@ export interface FnMeta {
   tick?: boolean;
   /** Only exists in dev builds (`@dev`). */
   dev?: boolean;
+  /** For anonymous functions: a readable start of the name (`step` from `const step = () => ...`). */
+  hint?: string;
 }
 
 /** A command line whose text is known when its function ends (commands are built step by step). */
@@ -68,6 +70,8 @@ export interface State {
   /** Anonymous functions, by placeholder number; named once everything is recorded. */
   anonymous: { fn: Function; origin: string; lines: string[] }[];
   functions: Map<string, FunctionRecord>;
+  /** More functions claiming an id that's taken: fine if their commands turn out identical. */
+  duplicates: { id: string; fn: Function; origin: string; lines: string[] }[];
   stack: BufferItem[][];
   tags: Map<string, TagRecord>;
   resources: Map<string, { registry: string; id: string; data: unknown }>;
@@ -133,6 +137,7 @@ export function resetState(
       registryIds: () => [],
     },
     metas: new Map(),
+    duplicates: [],
     ids: new Map(),
     bodies: new Map(),
     queue: [],
@@ -240,13 +245,38 @@ export function recordBody(fn: Function): string[] {
 //   (function lines, tags, resources). Identical bodies share a name; anonymous functions that
 //   reference each other in a cycle get a position-based name.
 
-function claim(id: string, fn: Function | null, origin: string): void {
+function claim(id: string, fn: Function, origin: string): void {
   const s = getState();
   const existing = s.functions.get(id);
-  if (existing && existing.owner !== fn) {
-    throw new Error(`Duplicate function id "${id}": defined by ${existing.origin} and ${origin}.`);
-  }
   if (!existing) s.functions.set(id, { owner: fn, origin, lines: [] });
+  // Checked once everything is recorded: the same commands may share the id (a helper that runs twice).
+  else if (existing.owner !== fn) s.duplicates.push({ id, fn, origin, lines: [] });
+}
+
+/** Throw for functions that share an id but not their commands. */
+function checkDuplicates(replace: (text: string) => string): void {
+  const s = getState();
+  for (const d of s.duplicates) {
+    const rec = s.functions.get(d.id)!;
+    if (d.lines.map(replace).join("\n") !== rec.lines.map(replace).join("\n")) {
+      throw new Error(`Duplicate function id "${d.id}": defined by ${rec.origin} and ${d.origin}, with different commands.`);
+    }
+  }
+}
+
+/**
+ * Give a function a fixed name (`named()` in `#mc`): a path under your function prefix, or a full
+ * id. Like `@mcfunction <id>`, it's written to the pack even if nothing calls it.
+ */
+export function nameFunction(fn: Function, id: string): void {
+  const s = getState();
+  overrideId(s.spec, id); // validates
+  if (s.ids.has(fn)) throw new Error(`named("${id}", ...): ${describe(fn, s.metas.get(fn))} already has a name. Name it before using it.`);
+  const meta = s.metas.get(fn);
+  if (typeof meta?.mcfunction === "string" && meta.mcfunction !== id) {
+    throw new Error(`named("${id}", ...): ${describe(fn, meta)} is already named "${meta.mcfunction}".`);
+  }
+  s.metas.set(fn, { ...meta, mcfunction: id });
 }
 
 function namedIdFor(meta: FnMeta | undefined): string | null {
@@ -310,8 +340,10 @@ function drainQueue(): void {
     const lines = recordBody(fn);
     const id = s.ids.get(fn)!;
     const anon = /^.*:mcjs2_pending\/(\d+)\/fn$/.exec(id);
+    const rec = anon ? undefined : s.functions.get(id)!;
     if (anon) s.anonymous[Number(anon[1])]!.lines = lines;
-    else s.functions.get(id)!.lines = lines;
+    else if (rec!.owner === fn) rec!.lines = lines;
+    else for (const d of s.duplicates) if (d.fn === fn) d.lines = lines;
   }
 }
 
@@ -334,7 +366,7 @@ function resolveAnonymous(): (text: string) => string {
     const a = anon[index]!;
     const meta = s.metas.get(a.fn);
     for (let len = 8; len <= base.length; len += 4) {
-      const id = anonymousId(s.spec, meta?.file, (body === null ? "p" : "") + base.slice(0, len));
+      const id = anonymousId(s.spec, meta?.file, (body === null ? "p" : "") + base.slice(0, len), meta?.hint);
       const existing = s.functions.get(id);
       if (!existing) {
         s.functions.set(id, { owner: a.fn, origin: a.origin, lines: [] });
@@ -495,6 +527,7 @@ export function collectOutput(options: OutputOptions = {}): BuildOutput {
     for (const tag of s.tags.values()) for (const v of tag.values) if (typeof v === "function") fnId(v);
   } while (s.queue.length);
   const replace = resolveAnonymous();
+  checkDuplicates(replace);
 
   const files = new Map<string, string>();
   const tagFiles: [string, string][] = [];

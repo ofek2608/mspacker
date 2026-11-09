@@ -81,9 +81,12 @@ export function overrideId(spec: NamespaceSpec, override: string): string {
   return `${ns}:${path}`;
 }
 
-export function anonymousId(spec: NamespaceSpec, relFile: string | undefined, hash: string): string {
+/** `hint` (a nested function's variable name) starts the name when it's usable: `__anon/step_1a2b3c4d`. */
+export function anonymousId(spec: NamespaceSpec, relFile: string | undefined, hash: string, hint?: string): string {
   const dir = relFile ? filePathToResource(relFile) : "";
-  return `${spec.ns}:${spec.prefix}${dir ? dir + "/" : ""}__anon/${hash}`;
+  const start = hint ? snake(hint) : "";
+  const name = start && isValidSegment(start) ? `${start}_${hash}` : hash;
+  return `${spec.ns}:${spec.prefix}${dir ? dir + "/" : ""}__anon/${name}`;
 }
 
 export function validateId(id: string): void {

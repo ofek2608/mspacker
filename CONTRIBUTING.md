@@ -37,7 +37,9 @@ In `examples/demo`: `npx mcjs2 gen`, `npx mcjs2 build`, `npx mcjs2 dev`.
    - `state.ts`: the recorder. `fnId` is the single way a function gets its name. Every function is
      queued and recorded one at a time (no nesting). Named functions get their name right away;
      anonymous ones get a placeholder, and once everything is recorded they're named by a hash of
-     their commands (references first, cycles by position) and the placeholders are replaced.
+     their commands (references first, cycles by position, prefixed by the `hint` the build records
+     for nested variables and object keys) and the placeholders are replaced. A taken id
+     (`named()`/`@mcfunction` twice) is checked after that: fine if the commands are identical.
    - `parsers.ts`: the argument type registry (see below).
    - `macro.ts`: macro functions. Every recorded function gets an `args` proxy (no arity check) whose
      properties are markers: objects with a symbol, owned by that function. Markers are never

@@ -1,4 +1,4 @@
-// In-game self test: /function demo:generated/math/tests/math_tests (dev builds only).
+// In-game self test: /function demo:api/math/test (dev builds only).
 // Expected values are worked out in JavaScript at build time. Prints `math-FAIL ...` per failure and
 // `math-done pass <n> fail <n>` at the end.
 import { $, macro, nbt, type FnRef, type Macro, type NbtCompound } from "#mc";
@@ -229,7 +229,7 @@ export function ReportTests() {
 
 /**
  * Runs every group, one per tick.
- * @dev @mcfunction
+ * @dev @mcfunction demo:api/math/test
  */
 export function MathTests() {
   $.scoreboard.players.set("#pass", OBJECTIVE, 0);

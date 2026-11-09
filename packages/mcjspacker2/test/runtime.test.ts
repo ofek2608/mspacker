@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { beforeEach, describe, expect, it } from "vitest";
 import { compactTree } from "../src/codegen/generate.js";
 import { createRoot, literalName } from "../src/runtime/command.js";
-import { __DEV__, __FUNCTION_PREFIX__, __NAMESPACE__, fnId, id, macro, resource, tag } from "../src/runtime/index.js";
+import { __DEV__, __FUNCTION_PREFIX__, __NAMESPACE__, fnId, id, macro, named, resource, tag } from "../src/runtime/index.js";
 import { setParserOverrides } from "../src/runtime/parsers.js";
 import { parseNamespace } from "../src/runtime/naming.js";
 import { collectOutput, resetState, type FnMeta } from "../src/runtime/state.js";
@@ -145,12 +145,49 @@ describe("function references", () => {
     expect(Object.keys(files).filter((f) => f.includes("__anon"))).toHaveLength(1);
   });
 
-  it("detects duplicate ids", () => {
-    function A() {}
-    function B() {}
+  it("detects duplicate ids with different commands", () => {
+    function A() {
+      $.say("a");
+    }
+    function B() {
+      $.say("b");
+    }
     meta(A, { file: "main.ts", name: "A", mcfunction: "same" });
     meta(B, { file: "main.ts", name: "B", mcfunction: "same" });
-    expect(() => build()).toThrow(/Duplicate function id "pk:gen\/same"/);
+    expect(() => build()).toThrow(/Duplicate function id "pk:gen\/same": defined by A \(main\.ts\) and B \(main\.ts\), with different commands/);
+  });
+
+  it("names functions with named(), by path or full id, and shares identical copies", () => {
+    const helper = (what: string) =>
+      named(`pk:api/${what}`, () => {
+        $.say(what);
+        $.execute.run.function(() => $.say("inner"));
+      });
+    helper("reset");
+    helper("reset"); // a second copy with the same commands
+    named("tools/x", () => $.say("x"));
+    const files = build();
+    expect(files["data/pk/function/api/reset.mcfunction"]).toMatch(/^say reset\nexecute run function pk:gen\/__anon\/[0-9a-f]{8}\n$/);
+    expect(files["data/pk/function/gen/tools/x.mcfunction"]).toBe("say x\n");
+
+    resetState(parseNamespace("pk:gen"));
+    helper("same");
+    named("pk:api/same", () => $.say("other"));
+    expect(() => build()).toThrow(/Duplicate function id "pk:api\/same".*different commands/);
+
+    resetState(parseNamespace("pk:gen"));
+    expect(() => named("Bad Id", () => {})).toThrow(/Invalid resource location/);
+  });
+
+  it("starts anonymous names with the hint of a nested function", () => {
+    function Main() {
+      // What the build adds for `const step = () => ...` inside a function.
+      const step = meta(() => $.say("step"), { file: "main.ts", hint: "step", line: 2 });
+      $.function(step);
+    }
+    meta(Main, { file: "main.ts", name: "Main", mcfunction: true });
+    const files = build();
+    expect(Object.keys(files).some((f) => /gen\/main\/__anon\/step_[0-9a-f]{8}\.mcfunction$/.test(f))).toBe(true);
   });
 
   it("supports overrides, load/tick tags and raw", () => {
