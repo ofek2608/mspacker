@@ -55,3 +55,7 @@ root. It covers writing functions and commands, `execute`, function names, tags 
 files, dev mode, configuration and supported versions.
 
 Contributing: see [`CONTRIBUTING.md`](../../CONTRIBUTING.md).
+
+## License
+
+[MIT](LICENSE)

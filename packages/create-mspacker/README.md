@@ -19,3 +19,7 @@ npm create mspacker@latest my-pack -- --version 26.3 --namespace mypack --yes
 
 Options: `--version <id>`, `--namespace <ns>`, `--description <text>`, `--yes` (accept defaults),
 `--no-install`, `--no-gen`.
+
+## License
+
+[MIT](LICENSE)

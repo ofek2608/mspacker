@@ -124,3 +124,7 @@ The [`examples/demo`](examples/demo) project shows a complete pack.
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## License
+
+[MIT](LICENSE)
