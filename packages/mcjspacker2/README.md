@@ -75,7 +75,7 @@ export default defineConfig({
 
 ## How functions map to files
 
-- **Entry points.** JSDoc `@mcfunction` makes a function an entry point. `@load` / `@tick` also add it to `#minecraft:load` / `#minecraft:tick`.
+- **Entry points.** JSDoc `@mcfunction` makes a function an entry point. `@load` / `@tick` also add it to `#minecraft:load` / `#minecraft:tick`. Add `@dev` to any of them for an entry that only exists in `mcjs2 dev` builds; referencing it from a release build is an error.
 - **Other functions.** Functions without a tag are emitted only when referenced (`$.function(fn)`, `.run(fn)`, `$(fn)`, `fnId(fn)`, `tag(...)`).
 - **Ids.** The id is `<namespace>:<prefix><file path>/<function name>`. Every path segment is converted by inserting `_` before each capital letter except the first, then lowercasing. For example, `src/combat/Arena.ts` → `function StartRound` gives `mypack:generated/combat/arena/start_round`.
 - **Overrides.** `/** @mcfunction other:path */` is absolute. `/** @mcfunction path */` is relative to the namespace prefix.
@@ -88,6 +88,7 @@ Your TypeScript runs **at build time**. Each command call appends one line to th
 
 - `if`/`for`/variables are compile-time: a loop unrolls into repeated commands.
 - Calling a helper directly (`Helper()`) inlines its commands. Use `$.function(Helper)` to emit a `function` call instead.
+- `__DEV__` (from `#mc`) is `true` in `mcjs2 dev` builds and `false` in `mcjs2 build`: `if (__DEV__) $.say("debug")`.
 - Calling a command at module top level is an error. Commands must run inside a function.
 
 ## Escape hatches

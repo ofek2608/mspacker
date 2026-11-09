@@ -14,6 +14,11 @@ describe("instrument", () => {
     expect(out).toContain(`"mcfunction":"other:path/x","tick":true`);
   });
 
+  it("parses @dev, also right after @mcfunction", () => {
+    expect(run(`/** @mcfunction @dev */\nfunction Foo() {}\n`)).toContain(`"mcfunction":true,"dev":true`);
+    expect(run(`/** @dev @load */\nfunction Foo() {}\n`)).toContain(`"load":true,"dev":true`);
+  });
+
   it("wraps arrows, naming them after their variable and nesting correctly", () => {
     const out = run(`/** @load */\nexport const Bar = () => () => 1;\n`);
     expect(out).toBe(

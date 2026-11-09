@@ -89,7 +89,10 @@ export function readGenMeta(cfg: ResolvedConfig): GenMeta {
 }
 
 /** Bundle the user's sources, execute them at build time, and return the datapack files. */
-export async function buildPack(cfg: ResolvedConfig): Promise<{ files: PackFiles; functionCount: number; warnings: string[] }> {
+export async function buildPack(
+  cfg: ResolvedConfig,
+  options: { dev?: boolean } = {},
+): Promise<{ files: PackFiles; functionCount: number; warnings: string[] }> {
   const meta = readGenMeta(cfg);
   const sources = listSources(cfg.srcDir);
   const outfile = join(cfg.workDir, "build", "bundle.mjs");
@@ -108,7 +111,7 @@ export async function buildPack(cfg: ResolvedConfig): Promise<{ files: PackFiles
   });
 
   setParserOverrides(cfg.parsers);
-  resetState(cfg.spec, { version: meta.version, packFormat: meta.packFormat[0] });
+  resetState(cfg.spec, { version: meta.version, packFormat: meta.packFormat[0] }, { dev: options.dev });
   process.setSourceMapsEnabled?.(true);
   let out: ReturnType<typeof collectOutput>;
   try {

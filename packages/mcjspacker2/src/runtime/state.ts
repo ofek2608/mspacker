@@ -18,6 +18,8 @@ export interface FnMeta {
   mcfunction?: true | string;
   load?: boolean;
   tick?: boolean;
+  /** Only exists in dev builds (`@dev`). */
+  dev?: boolean;
 }
 
 /** A command line whose text is known when its function ends (commands are built step by step). */
@@ -48,6 +50,8 @@ interface TagRecord {
 
 export interface State {
   spec: NamespaceSpec;
+  /** Building with `mcjs2 dev`. */
+  dev: boolean;
   /** Version info for parsers (serialize/test may depend on the game version). */
   ctx: ParserContext;
   metas: Map<Function, FnMeta>;
@@ -71,9 +75,31 @@ const META_KEY = Symbol.for("mcjspacker2.meta");
 
 type G = typeof globalThis & { [KEY]?: State; [META_KEY]?: (fn: Function, meta: FnMeta) => Function };
 
-export function resetState(spec: NamespaceSpec, version?: { version: string; packFormat: number }): State {
+const DEV_KEY = Symbol.for("mcjspacker2.dev");
+
+type DevGlobal = typeof globalThis & { [DEV_KEY]?: { value: boolean; listeners: Set<(v: boolean) => void> } };
+
+/** Shared `__DEV__` flag: every copy of the runtime module subscribes to it. */
+export function devFlag(): { value: boolean; listeners: Set<(v: boolean) => void> } {
+  const g = globalThis as DevGlobal;
+  return (g[DEV_KEY] ??= { value: false, listeners: new Set() });
+}
+
+function setDev(value: boolean): void {
+  const flag = devFlag();
+  flag.value = value;
+  for (const listener of flag.listeners) listener(value);
+}
+
+export function resetState(
+  spec: NamespaceSpec,
+  version?: { version: string; packFormat: number },
+  options: { dev?: boolean } = {},
+): State {
+  setDev(options.dev ?? false);
   const state: State = {
     spec,
+    dev: options.dev ?? false,
     ctx: {
       version: version?.version ?? "unknown",
       packFormat: version?.packFormat ?? Infinity,
@@ -210,6 +236,13 @@ const TOKEN = /\u0000fn:(\d+)\u0000/g;
 function enqueue(fn: Function): boolean {
   const s = getState();
   if (s.queued.has(fn)) return false;
+  const meta = s.metas.get(fn);
+  if (meta?.dev && !s.dev) {
+    throw new Error(
+      `${describe(fn, meta)} is marked @dev, so it doesn't exist in this build. ` +
+        "Only use it from dev-only code, e.g. inside `if (__DEV__) { ... }`.",
+    );
+  }
   s.queued.add(fn);
   s.queue.push(fn);
   return true;
@@ -446,11 +479,12 @@ export function collectOutput(options: OutputOptions = {}): BuildOutput {
   const tagFolder = (name: string) => (legacy ? (LEGACY_TAG_FOLDERS[name] ?? name) : name);
   const s = getState();
   const entries = [...s.metas.entries()]
-    .filter(([, m]) => m.mcfunction || m.load || m.tick)
+    .filter(([, m]) => m.mcfunction || m.load || m.tick || m.dev)
+    .filter(([, m]) => s.dev || !m.dev)
     .sort(([, a], [, b]) => (a.file ?? "").localeCompare(b.file ?? "") || (a.line ?? 0) - (b.line ?? 0));
 
   for (const [fn, meta] of entries) {
-    if (!namedIdFor(fn, meta) && meta.mcfunction) {
+    if (!namedIdFor(fn, meta) && (meta.mcfunction || meta.dev)) {
       throw new Error(`Entry point ${describe(fn, meta)} has no usable name. Give it a name or an id: /** @mcfunction my/id */`);
     }
     enqueue(fn);

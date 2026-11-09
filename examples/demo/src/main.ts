@@ -1,10 +1,11 @@
-import { $, fnId, tag } from "#mc";
+import { $, __DEV__, fnId, tag } from "#mc";
 import { StartRound } from "./combat/arena.js";
 
 /** @load */
 export function Init() {
   $.scoreboard.objectives.add.kills.playerKillCount;
   $.say("Demo pack loaded!");
+  if (__DEV__) $.say("[dev] debug output is on");
 }
 
 /** @tick */
@@ -47,3 +48,10 @@ export function Countdown() {
 }
 
 tag("function", "demo:all", [Greet, Countdown, "demo:handwritten"]);
+
+// Only in `mcjs2 dev` builds: /function demo:generated/main/debug_scores
+/** @dev @mcfunction */
+export function DebugScores() {
+  $.tellraw("@a", { text: "kills:", color: "gray" });
+  $.execute.as("@a").run.tellraw("@a", [{ selector: "@s" }, { text: " " }, { score: { name: "@s", objective: "kills" } }]);
+}

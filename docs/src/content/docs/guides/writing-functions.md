@@ -27,6 +27,7 @@ and the function, see [function names](/guides/function-ids/).
 | `/** @load */` | Also runs when the pack loads (and on `/reload`). |
 | `/** @tick */` | Also runs every tick. |
 | `/** @mcfunction custom/name */` | Uses a [different name](/guides/function-ids/#choosing-a-name). |
+| `/** @dev */` | Only exists while developing, see [debug-only functions](#debug-only-functions). |
 
 Comments can be combined: `/** @load @mcfunction setup */`.
 
@@ -68,6 +69,42 @@ say 1...
   [`execute`](/guides/execute/), scoreboards and storage.
 - You can use any npm package or read files to generate commands.
 - Commands must be inside a function. A command at the top of a file is an error.
+
+## Debug-only commands
+
+`__DEV__` is `true` while you work with [`mcjs2 dev`](/guides/dev-mode/) and `false` in
+`mcjs2 build`, so debug messages never reach the finished pack:
+
+```ts
+import { $, __DEV__ } from "#mc";
+
+/** @load */
+export function Setup() {
+  $.scoreboard.objectives.add.kills.playerKillCount;
+  if (__DEV__) $.say("[debug] pack reloaded");
+}
+```
+
+### Debug-only functions
+
+Add `@dev` to make a whole function exist only in `mcjs2 dev` builds. It works together with the
+other comments:
+
+```ts
+/** @dev @mcfunction */
+export function DebugScores() {
+  $.execute.as("@a").run.tellraw("@a", [{ selector: "@s" }, ": ", { score: { name: "@s", objective: "kills" } }]);
+}
+
+/** @dev @tick */
+export function ShowTickCounter() {
+  $.scoreboard.players.add("#ticks", "debug", 1);
+}
+```
+
+`/function mypack:main/debug_scores` works while developing, and the function isn't in the finished
+pack. Other functions can only call it from debug-only code, like inside `if (__DEV__)`; otherwise
+`mcjs2 build` stops and tells you where.
 
 ## Calling other functions
 

@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { beforeEach, describe, expect, it } from "vitest";
 import { compactTree } from "../src/codegen/generate.js";
 import { createRoot, literalName } from "../src/runtime/command.js";
-import { fnId, resource, tag } from "../src/runtime/index.js";
+import { __DEV__, fnId, resource, tag } from "../src/runtime/index.js";
 import { parseNamespace } from "../src/runtime/naming.js";
 import { collectOutput, resetState, type FnMeta } from "../src/runtime/state.js";
 
@@ -417,5 +417,65 @@ describe("$ proxy", () => {
     expect(literalName("function")).toBe("function");
     expect(literalName("then")).toBe("then_");
     expect(literalName("<")).toBeNull();
+  });
+});
+
+describe("__DEV__", () => {
+  it("is true only in dev builds", () => {
+    function Main() {
+      $.say(__DEV__ ? "dev" : "release");
+    }
+    meta(Main, { file: "main.ts", name: "Main", mcfunction: true });
+    expect(build()["data/pk/function/gen/main/main.mcfunction"]).toBe("say release\n");
+    resetState(parseNamespace("pk:gen"), undefined, { dev: true });
+    meta(Main, { file: "main.ts", name: "Main", mcfunction: true });
+    expect(build()["data/pk/function/gen/main/main.mcfunction"]).toBe("say dev\n");
+    resetState(parseNamespace("pk:gen"));
+    expect(__DEV__).toBe(false);
+  });
+});
+
+describe("@dev entries", () => {
+  const setup = () => {
+    function Debug() {
+      $.say("debug");
+    }
+    function Main() {
+      $.say("main");
+    }
+    meta(Debug, { file: "main.ts", name: "Debug", dev: true, load: true });
+    meta(Main, { file: "main.ts", name: "Main", mcfunction: true });
+    return { Debug, Main };
+  };
+
+  it("exist only in dev builds", () => {
+    setup();
+    const release = build();
+    expect(Object.keys(release)).toEqual(["data/pk/function/gen/main/main.mcfunction"]);
+
+    resetState(parseNamespace("pk:gen"), undefined, { dev: true });
+    setup();
+    const dev = build();
+    expect(dev["data/pk/function/gen/main/debug.mcfunction"]).toBe("say debug\n");
+    expect(JSON.parse(dev["data/minecraft/tags/function/load.json"]!).values).toEqual(["pk:gen/main/debug"]);
+  });
+
+  it("can't be referenced from a release build", () => {
+    const { Debug } = setup();
+    function Caller() {
+      $.function(Debug);
+    }
+    meta(Caller, { file: "main.ts", name: "Caller", mcfunction: true });
+    expect(() => build()).toThrow(/Debug \(main\.ts\) is marked @dev/);
+  });
+
+  it("can be referenced behind __DEV__", () => {
+    const { Debug } = setup();
+    function Caller() {
+      if (__DEV__) $.function(Debug);
+      $.say("ok");
+    }
+    meta(Caller, { file: "main.ts", name: "Caller", mcfunction: true });
+    expect(build()["data/pk/function/gen/main/caller.mcfunction"]).toBe("say ok\n");
   });
 });

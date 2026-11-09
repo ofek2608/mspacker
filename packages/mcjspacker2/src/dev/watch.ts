@@ -149,7 +149,7 @@ export async function dev(projectDir: string, opts: DevOptions): Promise<void> {
         reloadConfig = false;
       }
       const t0 = Date.now();
-      const { files, functionCount, warnings } = await buildPack(cfg);
+      const { files, functionCount, warnings } = await buildPack(cfg, { dev: true });
       for (const w of warnings) opts.log(`warning: ${w}`);
       const dir = target.packDir(cfg);
       writePackDir(dir, files);

@@ -7,6 +7,7 @@
  *   @mcfunction            entry point (emitted even if never referenced)
  *   @mcfunction <id>       entry point with explicit id ("ns:path" or path relative to the namespace prefix)
  *   @load / @tick          add to #minecraft:load / #minecraft:tick (implies entry point)
+ *   @dev                   entry point that only exists in dev builds (combine with the tags above)
  */
 import { parse } from "@babel/parser";
 import type { FnMeta } from "../runtime/state.js";
@@ -23,17 +24,21 @@ interface AnyNode {
 export const HEADER =
   'const __mcjs_m = globalThis[Symbol.for("mcjspacker2.meta")], __mcjs_w = (f, m) => (__mcjs_m(f, m), f); ';
 
-function jsdocTags(...nodes: (AnyNode | undefined)[]): Pick<FnMeta, "mcfunction" | "load" | "tick"> {
+type Tags = Pick<FnMeta, "mcfunction" | "load" | "tick" | "dev">;
+
+function jsdocTags(...nodes: (AnyNode | undefined)[]): Tags {
   for (const node of nodes) {
     const comments = node?.leadingComments;
     if (!comments?.length) continue;
     const doc = [...comments].reverse().find((c) => c.type === "CommentBlock" && c.value.startsWith("*"));
     if (!doc) continue;
-    const out: Pick<FnMeta, "mcfunction" | "load" | "tick"> = {};
-    const m = /@mcfunction\b(?:[ \t]+([^\s*]+))?/.exec(doc.value);
+    const out: Tags = {};
+    // The id can't start with "@", so `@mcfunction @dev` is two tags.
+    const m = /@mcfunction\b(?:[ \t]+([^\s*@][^\s*]*))?/.exec(doc.value);
     if (m) out.mcfunction = m[1] ?? true;
     if (/@load\b/.test(doc.value)) out.load = true;
     if (/@tick\b/.test(doc.value)) out.tick = true;
+    if (/@dev\b/.test(doc.value)) out.dev = true;
     return out;
   }
   return {};

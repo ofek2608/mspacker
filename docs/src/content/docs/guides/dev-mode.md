@@ -13,6 +13,10 @@ the dev server's world, at `<server dir>/<level-name>/datapacks/<name>`, and sen
 server over RCON. If a build fails, the error is printed with its source location and the previous
 pack stays in place.
 
+Dev builds set [`__DEV__`](/guides/writing-functions/#debug-only-commands) to `true` and include
+[`@dev` functions](/guides/writing-functions/#debug-only-functions), so you can add commands and
+functions that only exist while developing.
+
 ## The server directory
 
 The dev server lives in `server/` by default (`server.dir` in the config, or the `MCJS2_SERVER_DIR`
