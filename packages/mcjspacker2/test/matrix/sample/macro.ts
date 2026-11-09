@@ -3,7 +3,7 @@ import { $, macro, type Macro } from "#mc";
 
 export function Show(args: Macro<"word" | "count" | "target">) {
   $.scoreboard.players.set(args.target, "mcjs2", args.count);
-  $.tellraw("@a", { text: args.word.quoted, color: "gold" });
+  $.tellraw("@a", { text: macro`"${args.word}"`, color: "gold" });
   $(macro`say mcjs2-macro-ok ${args.word} ${args.count}`);
 }
 

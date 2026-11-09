@@ -3,7 +3,7 @@
 //   compute(add(stored("x"), mul(2, score("#y"))))   ->  x + 2 * #y, evaluated in game
 //
 // Values can be numbers, other expressions, or macro arguments (`args.n`).
-import type { MacroArg, NbtCompound } from "#mc";
+import { macro, type MacroArg, type NbtCompound } from "#mc";
 
 export type Num = number | NbtCompound | MacroArg;
 /** A storage path; build one with macro arguments using `` macro`m[${args.i}]` ``. */
@@ -53,7 +53,7 @@ export const binomial = (n: Num, p: Num) => op("binomial", { n, p });
 /** A number in storage (`demo:math <path>`), or `fallback` if it's missing. */
 export const stored = (path: Path, fallback?: Num) =>
   // Inside NBT a macro argument is written as-is, so a path built with macro`...` needs its quotes.
-  op("storage", { storage: STORAGE, path: typeof path === "string" ? path : path.quoted, ...(fallback === undefined ? {} : { fallback }) });
+  op("storage", { storage: STORAGE, path: typeof path === "string" ? path : macro`"${path}"`, ...(fallback === undefined ? {} : { fallback }) });
 /** A score (of the `math` objective by default). */
 export const score = (holder: string, objective = OBJECTIVE) =>
   op("score", { target: { type: "minecraft:fixed", name: holder }, score: objective });

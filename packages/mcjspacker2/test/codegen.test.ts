@@ -95,7 +95,7 @@ $.tellraw("@a", { color: "golden" });
 // Macro arguments fit anywhere, also inside objects; only their names are checked.
 export function WithArgs(args: Macro<"who" | "n" | "name" | "pos">) {
   $.tp(args.who as MacroArg<Selector>, args.pos as MacroArg<Vec3>);
-  $.tellraw(args.who, { text: args.name, extra: [{ text: args.name.quoted }] });
+  $.tellraw(args.who, { text: args.name, extra: [{ text: macro\`"\${args.name}"\` }] });
   $.setblock(macro\`\${args.n} 64 \${args.n}\`, "stone");
   $.scoreboard.players.set(args.who, "kills", args.n);
   $(macro\`say \${args.name}\`);

@@ -179,7 +179,7 @@ function joinText(count: number) {
 
 /** A square at a position worked out in game: x/y/z/color/tag from storage `with` (color: ARGB int). */
 export function Dot(args: Macro<"x" | "y" | "z" | "color" | "tag">) {
-  $.summon("text_display", macro`${args.x} ${args.y} ${args.z}`, { Tags: [TAG, args.tag.quoted], ...squareData(0.15, 0), background: args.color });
+  $.summon("text_display", macro`${args.x} ${args.y} ${args.z}`, { Tags: [TAG, macro`"${args.tag}"`], ...squareData(0.15, 0), background: args.color });
 }
 
 /** setblock at a position worked out in game (x/y/z/block from storage `with`). */

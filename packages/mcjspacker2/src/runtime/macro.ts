@@ -27,8 +27,6 @@ export interface MacroArg<T = unknown> {
   readonly [IS_MACRO]: true;
   /** @internal What you said it is (`as MacroArg<Vec3>`), for TypeScript only. */
   readonly [AS]: T;
-  /** The argument in double quotes, for string values inside NBT: `"$(name)"`. */
-  readonly quoted: MacroArg<T>;
 }
 
 /** The parameter of a macro function, listing its argument names: `function Greet(args: Macro<"name" | "count">)`. */
@@ -134,8 +132,7 @@ function use(info: MarkerInfo, text: string): string {
   return text;
 }
 
-/** `json` is the text inside a JSON string (JSON adds the quotes itself). */
-function marker(info: MarkerInfo, text: string, json = text): MarkerObject {
+function marker(info: MarkerInfo, text: string): MarkerObject {
   const m = { [NBT]: "raw", [MACRO]: info } as unknown as MarkerObject;
   const asText = () => {
     throw new MacroError(
@@ -146,17 +143,10 @@ function marker(info: MarkerInfo, text: string, json = text): MarkerObject {
   Object.defineProperties(m, {
     text: { get: () => use(info, text) },
     [RAW]: { value: text },
-    toJSON: { value: () => use(info, json) },
+    toJSON: { value: () => use(info, text) },
     toString: { value: asText },
     [Symbol.toPrimitive]: { value: asText },
   });
-  return m;
-}
-
-/** A marker plus its `.quoted` version. */
-function markerWithQuoted(info: MarkerInfo, text: string): MarkerObject {
-  const m = marker(info, text);
-  Object.defineProperty(m, "quoted", { value: marker({ ...info, label: `${info.label}.quoted` }, `"${text}"`, text) });
   return m;
 }
 
@@ -193,7 +183,7 @@ export function macroArgs(owner: object, where: string, supported = true): unkno
         if (!supported) throw new MacroError(`${where} uses macro argument args.${prop}. Macros need Minecraft 1.20.2 or newer.`);
         let m = cache.get(prop);
         if (!m) {
-          m = markerWithQuoted({ owner, ownerName: where, label: `args.${prop}` }, `$(${prop})`);
+          m = marker({ owner, ownerName: where, label: `args.${prop}` }, `$(${prop})`);
           cache.set(prop, m);
         }
         return m;
@@ -223,5 +213,5 @@ export function macro(strings: TemplateStringsArray, ...values: unknown[]): Macr
   const info = markers[0]![MACRO];
   const other = markers.find((m) => m[MACRO].owner !== info.owner);
   if (other) throw new MacroError(`macro\`${text}\` mixes macro arguments of ${info.ownerName} and ${other[MACRO].ownerName}.`);
-  return markerWithQuoted({ owner: info.owner, ownerName: info.ownerName, label: `macro\`${text}\``, verbatim: true }, text) as unknown as MacroArg;
+  return marker({ owner: info.owner, ownerName: info.ownerName, label: `macro\`${text}\``, verbatim: true }, text) as unknown as MacroArg;
 }

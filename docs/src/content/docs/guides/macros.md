@@ -88,15 +88,20 @@ The error mentions `TypedArg<...>` with the type it expected. Any argument type 
 
 ## Text in NBT and text components
 
-A value is put in as-is, so a string inside NBT or a text component needs quotes. Use `.quoted`:
+A value is put in exactly as the game gets it, so a string inside NBT or a text component needs
+quotes. Add them yourself with `macro`:
 
 ```ts
 export function Welcome(args: Macro<"name">) {
-  $.tellraw("@a", { text: args.name.quoted, color: "gold" });   // {text:"$(name)",color:"gold"}
+  $.tellraw("@a", { text: macro`"${args.name}"`, color: "gold" });   // {text:"$(name)",color:"gold"}
 }
 ```
 
-The value itself must not contain `"` then.
+The game pastes the value in as text, so a value with a `"` in it breaks the command. Making sure
+the values fit is up to you.
+
+Before 1.21.5 text is JSON, and a macro argument in a text component is already written as a JSON
+string: `{ text: args.name }` gives `{"text":"$(name)"}`.
 
 ## Limits
 

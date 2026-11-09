@@ -581,8 +581,8 @@ describe("macro functions", () => {
       $.tp(args.target, args.pos);
       $.scoreboard.players.set(args.target, "obj", args.amount);
       $(macro`tp @s ${args.destination}`);
-      $.tellraw("@a", { text: args.name.quoted, color: "red" });
-      $.function("pk:other", { Count: args.amount, Name: args.name.quoted });
+      $.tellraw("@a", { text: macro`"${args.name}"`, color: "red" });
+      $.function("pk:other", { Count: args.amount, Name: macro`"${args.name}"` });
     }
     meta(Teleport, { file: "main.ts", name: "Teleport", mcfunction: true });
     expect(build()["data/pk/function/gen/main/teleport.mcfunction"]).toBe(
@@ -601,13 +601,13 @@ describe("macro functions", () => {
   it("writes macro arguments as JSON strings in text before SNBT text components", () => {
     function Hello(args: any) {
       $.tellraw("@a", { text: args.name });
-      $.tellraw("@a", { text: args.name.quoted });
+      $.tellraw("@a", { text: macro`${args.name}!` });
     }
     meta(Hello, { file: "main.ts", name: "Hello", mcfunction: true });
     resetState(parseNamespace("pk:gen"), { version: "1.20.4", packFormat: 26 });
     meta(Hello, { file: "main.ts", name: "Hello", mcfunction: true });
     expect(build(26)["data/pk/functions/gen/main/hello.mcfunction"]).toBe(
-      '$tellraw @a {"text":"$(name)"}\n$tellraw @a {"text":"$(name)"}\n',
+      '$tellraw @a {"text":"$(name)"}\n$tellraw @a {"text":"$(name)!"}\n',
     );
   });
 
@@ -686,7 +686,7 @@ describe("macro functions", () => {
     function Main(args: any) {
       $.tp("@s", macro`${args.x} ${args.y} ${args.z}`);
       $.execute.as(macro`@e[tag=${args.tag},limit=1]`).run.say("hi");
-      $.tellraw("@a", { text: macro`"Hello ${args.name}!"`, extra: [{ text: args.who.quoted }] });
+      $.tellraw("@a", { text: macro`"Hello ${args.name}!"`, extra: [{ text: macro`"${args.who}"` }] });
       $(macro`say ${args.name} and ${5}`);
       $(macro`say no arguments`);
     }
