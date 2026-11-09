@@ -31,7 +31,7 @@ export interface UserConfig {
     download?: boolean;
     /** RCON host. Default "127.0.0.1". */
     host?: string;
-    /** Extra JVM args for `mcjs2 dev --start`. */
+    /** Extra JVM args for the server `mcjs2 dev` starts. */
     jvmArgs?: string[];
   };
   /** Path to java. Default: JAVA_HOME, PATH, then the launcher's bundled runtime. */

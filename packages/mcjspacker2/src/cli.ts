@@ -47,13 +47,12 @@ cli
   });
 
 cli
-  .command("dev", "Watch, rebuild into the server world (or a save), and /reload")
-  .option("--save <name>", 'Target a singleplayer save instead of the server ("auto" = most recently played)')
-  .option("--start", "Start the dedicated server too")
+  .command("dev", "Start the dev server (or use a singleplayer world), rebuild on every save and reload in game")
+  .option("--save <name>", 'Use a singleplayer save instead of the server ("auto" = most recently played)')
   .action(async (o) => {
     const cfg = await loadConfig(o.cwd);
     if (!existsSync(join(cfg.genDir, "meta.json"))) await generateLibrary(cfg, { log });
-    await dev(o.cwd, { save: o.save === true ? "auto" : o.save, start: o.start, log });
+    await dev(o.cwd, { save: o.save === true ? "auto" : o.save, log });
   });
 
 cli.help();

@@ -63,7 +63,7 @@ Build output directory. Default `"dist"`.
 | `jar` | `server.jar`, or the only `*.jar` | Jar file name in `dir`. |
 | `download` | `true` | Download the official jar when `dir` has none. |
 | `host` | `"127.0.0.1"` | RCON host. |
-| `jvmArgs` | `[]` | Extra JVM arguments for `mcjs2 dev --start`, e.g. `["-Xmx2G"]`. |
+| `jvmArgs` | `[]` | Extra JVM arguments for the server `mcjs2 dev` starts, e.g. `["-Xmx2G"]`. |
 
 ### `java`
 

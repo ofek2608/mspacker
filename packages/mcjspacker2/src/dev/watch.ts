@@ -2,6 +2,7 @@ import { spawn, type ChildProcess } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { connect as netConnect } from "node:net";
 import { watch } from "chokidar";
 import { loadConfig, type ResolvedConfig } from "../config.js";
 import { buildPack, formatBuildError, type GenMeta } from "../build/build.js";
@@ -14,10 +15,8 @@ import { Rcon } from "./rcon.js";
 import { detectCurrentSave, findSave } from "./saves.js";
 
 export interface DevOptions {
-  /** Singleplayer save name, or "auto". When unset, the server target is used. */
+  /** Singleplayer save name, or "auto". When unset, dev runs the dedicated server. */
   save?: string;
-  /** Start the dedicated server as a child process. */
-  start?: boolean;
   log: (s: string) => void;
 }
 
@@ -70,7 +69,10 @@ async function serverTarget(cfg: ResolvedConfig, opts: DevOptions): Promise<Targ
   let child: ChildProcess | null = null;
   const eulaFile = join(server.dir, "eula.txt");
   const eulaAccepted = () => existsSync(eulaFile) && /^\s*eula\s*=\s*true\s*$/m.test(readFileSync(eulaFile, "utf8"));
-  if (opts.start) {
+  const gamePort = Number(props["server-port"] || 25565);
+  if (await isListening(host, gamePort)) {
+    opts.log(`A server is already running on port ${gamePort}; using it instead of starting one.`);
+  } else {
     const java = await findJavaFor(cfg.version, { configured: cfg.java, minecraftRoot: cfg.minecraftRoot });
     opts.log(`Starting server in ${server.dir}...`);
     child = spawn(java, [...(cfg.server?.jvmArgs ?? []), "-jar", server.jar, "nogui"], { cwd: server.dir, stdio: "inherit" });
@@ -80,7 +82,7 @@ async function serverTarget(cfg: ResolvedConfig, opts: DevOptions): Promise<Targ
         // The server writes eula.txt itself and stops until the user accepts it. Keep watching.
         opts.log(
           `Server stopped: the Minecraft EULA (https://aka.ms/MinecraftEULA) is not accepted.\n` +
-            `  To accept it, set eula=true in ${eulaFile}, then run dev --start again. Still watching and rebuilding.`,
+            `  To accept it, set eula=true in ${eulaFile}, then run \`mcjs2 dev\` again. Still watching and rebuilding.`,
         );
         return;
       }
@@ -135,7 +137,7 @@ async function serverTarget(cfg: ResolvedConfig, opts: DevOptions): Promise<Targ
       }
       opts.log(
         child
-          ? `The server is still running Minecraft ${from}. To play on ${c.version}, type \`stop\` in the server console, then run \`mcjs2 dev --start\` again.`
+          ? `The server is still running Minecraft ${from}. To play on ${c.version}, type \`stop\` in the server console, then run \`mcjs2 dev\` again.`
           : `If the server is running, restart it to play on Minecraft ${c.version}.`,
       );
     },
@@ -218,4 +220,18 @@ export async function dev(projectDir: string, opts: DevOptions): Promise<void> {
 function generatedVersion(cfg: ResolvedConfig): string | null {
   const file = join(cfg.genDir, "meta.json");
   return existsSync(file) ? (JSON.parse(readFileSync(file, "utf8")) as GenMeta).version : null;
+}
+
+/** Whether something accepts TCP connections on host:port (a server that's already running). */
+function isListening(host: string, port: number): Promise<boolean> {
+  return new Promise((resolveP) => {
+    const socket = netConnect({ host, port });
+    const done = (result: boolean) => {
+      socket.destroy();
+      resolveP(result);
+    };
+    socket.setTimeout(500, () => done(false));
+    socket.once("connect", () => done(true));
+    socket.once("error", () => done(false));
+  });
 }

@@ -48,14 +48,13 @@ Builds the pack into `<outDir>/<name>`, replacing what was there. `--zip` also w
 ### `mcjs2 dev`
 
 ```sh
-mcjs2 dev [--start] [--save <name|auto>]
+mcjs2 dev [--save <name|auto>]
 ```
 
-Watches and rebuilds. See [dev mode](/guides/dev-mode/).
+Starts the dev server, rebuilds on every save and reloads the pack in game. See [dev mode](/guides/dev-mode/).
 
 | Option | |
 |---|---|
-| `--start` | Start the dev server too. |
 | `--save <name>` | Build into a singleplayer save instead of the server. `auto` picks the most recently played one. |
 
 The cache directory is `$XDG_CACHE_HOME/mcjspacker2` when `XDG_CACHE_HOME` is set.

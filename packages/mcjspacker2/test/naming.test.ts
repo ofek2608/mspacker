@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { anonymousId, namedFunctionId, overrideId, parseNamespace, pascal, snake } from "../src/runtime/naming.js";
+import { anonymousId, camel, namedFunctionId, overrideId, parseNamespace, snake } from "../src/runtime/naming.js";
 
 describe("parseNamespace", () => {
   it.each([
@@ -46,8 +46,10 @@ describe("function ids", () => {
   it("builds anonymous ids", () => {
     expect(anonymousId(spec, "main.ts", "abcd1234")).toBe("mypack:generated/main/__anon/abcd1234");
   });
-  it("pascal-cases command literals", () => {
-    expect(pascal("save-all")).toBe("SaveAll");
-    expect(pascal("tp")).toBe("Tp");
+  it("camel-cases argument names for generated parameters", () => {
+    expect(camel("max_count")).toBe("maxCount");
+    expect(camel("targets")).toBe("targets");
+    expect(camel("Target-Pos")).toBe("targetPos");
+    expect(camel("")).toBe("arg");
   });
 });

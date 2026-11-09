@@ -159,7 +159,7 @@ export async function create(args: CreateArgs): Promise<void> {
     !installed && `${pm} install`,
     !generated && `${run} gen      # generate the typed command library`,
     `${run} build    # build the data pack into dist/`,
-    `${run} dev      # watch, rebuild into the dev server and /reload`,
+    `${run} dev      # start the dev server; every save rebuilds and reloads in game`,
   ].filter(Boolean);
   p.note(steps.join("\n"), "Next steps");
   p.outro("Happy packing!");

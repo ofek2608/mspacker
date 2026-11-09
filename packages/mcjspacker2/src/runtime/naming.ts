@@ -99,16 +99,9 @@ export function splitId(id: string): [string, string] {
   return colon < 0 ? ["minecraft", id] : [id.slice(0, colon), id.slice(colon + 1)];
 }
 
-/** Command literal -> exported identifier: "save-all" -> "SaveAll", "tp" -> "Tp". */
-export function pascal(literal: string): string {
-  return literal
-    .split(/[^A-Za-z0-9]+/)
-    .filter(Boolean)
-    .map((p) => p[0]!.toUpperCase() + p.slice(1))
-    .join("");
-}
-
+/** Argument name -> parameter name in generated signatures: "max_count" -> "maxCount", "" -> "arg". */
 export function camel(name: string): string {
-  const p = pascal(name);
-  return p ? p[0]!.toLowerCase() + p.slice(1) : "arg";
+  const words = name.split(/[^A-Za-z0-9]+/).filter(Boolean);
+  if (!words.length) return "arg";
+  return words.map((w, i) => (i ? w[0]!.toUpperCase() + w.slice(1) : w[0]!.toLowerCase() + w.slice(1))).join("");
 }
