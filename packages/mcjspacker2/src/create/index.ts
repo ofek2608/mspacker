@@ -43,6 +43,7 @@ function validateNamespace(v: string | undefined): string | undefined {
   } catch (e) {
     return (e as Error).message;
   }
+  return undefined;
 }
 
 /** The package manager that launched us (`pnpm create`, `yarn create`, `npm create`, `bun create`). */

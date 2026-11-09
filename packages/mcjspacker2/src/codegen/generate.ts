@@ -122,10 +122,6 @@ export function generate(
       lines.push(
         "  /** A command line as-is: `$(\"say hi\")`, or a macro line: `$(\"$say $(message)\")`. */",
         "  (command: string): void;",
-        "  /** A command template. Functions interpolate as their ids: `$`function ${Helper}``. */",
-        "  (strings: TemplateStringsArray, ...values: unknown[]): void;",
-        "  /** A function's commands: a single anonymous command is inlined, otherwise `function <id>`. */",
-        "  (fn: (...args: never[]) => unknown): void;",
       );
     } else if (node.x) {
       lines.push(`  /** \`${syntax}\` */`, `  (): ${names.get(node)};`);
@@ -209,17 +205,17 @@ export function generate(
     `/* eslint-disable */\n` +
     `import { createRoot } from "mcjspacker2/runtime";\n` +
     `import type * as R from "mcjspacker2/runtime";\n` +
-    `import type { Id } from "./registries.js";\n` +
+    (/\bId</.test(out.join("\n")) ? `import type { Id } from "./registries.js";\n` : "") +
     `import { tree } from "./tree.js";\n\n` +
-    TYPE_ALIASES +
+    usedTypeAliases(out.join("\n")) +
     "\n\n" +
     "/** A string argument written as a property: `.red` for `(\"red\")`. */\n" +
     "type PropArg<T, Next> = { readonly [K in Extract<T, string>]: Next };\n\n" +
     "/**\n" +
-    " * Every command, as a chain: literals are properties, arguments are calls.\n" +
+    " * Every command: words are properties, values are calls.\n" +
     " *\n" +
-    " *     $.Execute.As(\"@a\").At(\"@s\").Run.Say(\"hi\");\n" +
-    " *     $.Scoreboard.Players.Set(\"@s\", \"kills\", 0);\n" +
+    " *     $.execute.as(\"@a\").at(\"@s\").run.say(\"hi\");\n" +
+    " *     $.scoreboard.players.set(\"@s\", \"kills\", 0);\n" +
     " *     $(\"say raw command\");\n" +
     " */\n" +
     "export const $ = createRoot(tree) as Commands;\n\n" +
@@ -261,11 +257,16 @@ export function generate(
 /** Local aliases so generated signatures can use bare type names. */
 const TYPE_NAMES = [
   "RotationCoord", "Vec3", "BlockPos", "Vec2", "ColumnPos", "Rotation", "Selector", "ScoreHolder", "Range", "Duration", "TextComponent",
-  "FnRef", "RunTarget", "EntityAnchor", "GameModeId", "Heightmap", "Operation", "TemplateMirror", "TemplateRotation",
+  "FnRef", "EntityAnchor", "GameModeId", "Heightmap", "Operation", "TemplateMirror", "TemplateRotation",
   "Swizzle", "ChatColor", "ScoreboardSlot", "LegacyScoreboardSlot", "LegacyTextComponent", "Dimension", "NbtCompound",
   "NbtValue",
 ];
-const TYPE_ALIASES = TYPE_NAMES.map((n) => `type ${n} = R.${n};`).join("\n");
+/** Aliases for the runtime types the generated signatures use (unused ones would trip `noUnusedLocals`). */
+function usedTypeAliases(code: string): string {
+  return TYPE_NAMES.filter((n) => new RegExp(`\\b${n}\\b`).test(code))
+    .map((n) => `type ${n} = R.${n};`)
+    .join("\n");
+}
 
 
 const RESERVED = new Set([

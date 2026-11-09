@@ -15,7 +15,7 @@
  * Unknown parsers fall back to `string`.
  */
 import { snbt, quoteString, type NbtValue } from "./nbt.js";
-import { functionRef } from "./state.js";
+import { fnId } from "./state.js";
 
 export type Props = Record<string, unknown> | undefined;
 
@@ -318,7 +318,7 @@ export const PARSERS: Record<string, ParserDef> = {
   "minecraft:function": {
     type: () => "FnRef",
     test: (v) => isStr(v) || typeof v === "function",
-    serialize: (v) => functionRef(v),
+    serialize: (v) => fnId(v),
     examples: () => ["probe:target"],
   },
 

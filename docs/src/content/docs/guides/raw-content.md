@@ -57,19 +57,18 @@ Calling `$` writes a command exactly as you give it. Use it for anything mcjspac
 or for macro lines:
 
 ```ts
-import { $ } from "#mc";
+import { $, fnId } from "#mc";
 
 /** @mcfunction */
 export function Main() {
   $("say this line is copied as-is");
-  $("$tp @s $(x) $(y) $(z)");          // macro line
-  $`schedule function ${Tick} 1s`;      // functions become their names
-  $(Helper);                            // function mypack:main/helper
+  $("$tp @s $(x) $(y) $(z)");                    // macro line
+  $(`schedule function ${fnId(Tick)} 1s`);        // fnId gives a function's name
 }
 ```
 
-Written with backticks right after `$` (no parentheses), functions inside `${...}` become their
-names. Inside a normal string, use `fnId(Tick)` to get a function's name.
+`fnId(Tick)` returns the function's name in game, like `mypack:main/tick`, and makes sure the
+function is in the pack.
 
 ## NBT
 

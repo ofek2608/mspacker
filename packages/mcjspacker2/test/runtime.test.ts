@@ -55,10 +55,10 @@ describe("commands", () => {
 });
 
 describe("execute chains", () => {
-  it("inlines single-command callbacks and outlines multi-command ones", () => {
+  it("runs a command, or a function's commands, after run", () => {
     function Main() {
-      $.execute.as("@a").at("@s").run(() => $.say("one"));
-      $.execute.if.entity("@p").run(() => {
+      $.execute.as("@a").at("@s").run.say("one");
+      $.execute.if.entity("@p").run.function(() => {
         $.say("a");
         $.say("b");
       });
@@ -90,7 +90,7 @@ describe("execute chains", () => {
 
   it("supports return run", () => {
     function Main() {
-      $.return.run(() => $.say("x"));
+      $.return.run.say("x");
     }
     meta(Main, { file: "main.ts", name: "Main", mcfunction: true });
     expect(build()["data/pk/function/gen/main/main.mcfunction"]).toBe("return run say x\n");
@@ -200,28 +200,39 @@ describe("queued recording", () => {
     expect(files["data/pk/function/gen/chain/f19999.mcfunction"]).toBe("say n19999\n");
   });
 
-  it("handles long chains of anonymous functions", () => {
-    const fns: Function[] = [];
-    for (let i = 0; i < 5_000; i++) {
-      fns.push(() => {
-        $.say(`a${i}`);
-        if (i + 1 < 5_000) $.function(fns[i + 1]);
-      });
+  it("handles chains of anonymous functions up to a limit, with a clear error past it", () => {
+    const chain = (n: number) => {
+      const fns: Function[] = [];
+      for (let i = 0; i < n; i++) {
+        fns.push(() => {
+          $.say(`a${i}`);
+          if (i + 1 < n) $.function(fns[i + 1]);
+        });
+      }
+      return fns[0]!;
+    };
+    function Long() {
+      $.function(chain(1_000));
     }
+    meta(Long, { file: "main.ts", name: "Long", mcfunction: true });
+    expect(() => build()).toThrow(/more than 400 anonymous functions call each other in a chain/);
+
+    resetState(parseNamespace("pk:gen"));
+    const first = chain(300);
     function Main() {
-      $.function(fns[0]);
+      $.function(first);
     }
     meta(Main, { file: "main.ts", name: "Main", mcfunction: true });
     const files = build();
-    expect(Object.keys(files).filter((f) => f.includes("__anon"))).toHaveLength(5_000);
+    expect(Object.keys(files).filter((f) => f.includes("__anon"))).toHaveLength(300);
     expect(files["data/pk/function/gen/main/main.mcfunction"]).toMatch(/^function pk:gen\/__anon\/[0-9a-f]{8}\n$/);
   });
 
-  it("runs .run callbacks immediately, so they see the caller's state", () => {
+  it("records anonymous functions immediately, so they see the caller's state", () => {
     function Main() {
       let wave = 0;
       for (; wave < 2; wave++) {
-        $.execute.as("@a").run(() => {
+        $.execute.as("@a").run.function(() => {
           $.say(`wave ${wave}`);
           $.say("x");
         });
@@ -233,7 +244,7 @@ describe("queued recording", () => {
     expect(bodies).toEqual(["say wave 0\nsay x\n", "say wave 1\nsay x\n"]);
   });
 
-  it("resolves anonymous ids in raw lines, tags and resources", () => {
+  it("gives the real name of anonymous functions right away", () => {
     const anon = () => {
       $.say("a");
       $.say("b");
@@ -249,7 +260,6 @@ describe("queued recording", () => {
     expect(id).toMatch(/^pk:gen\/__anon\/[0-9a-f]{8}$/);
     expect(JSON.parse(files["data/pk/tags/function/t.json"]!).values).toEqual([id]);
     expect(JSON.parse(files["data/pk/advancement/adv.json"]!).rewards.function).toBe(id);
-    expect(Object.values(files).join("")).not.toContain("\u0000");
   });
 
   it("records functions referenced by tags added while recording", () => {
@@ -321,20 +331,24 @@ describe("$ proxy", () => {
     );
   });
 
-  it("emits raw lines, templates and functions from the root", () => {
+  it("writes commands given as text, and only text", () => {
     function Helper() {
       $.say("a");
-      $.say("b");
     }
     meta(Helper, { file: "main.ts", name: "Helper" });
     expect(
       main(function Main() {
         $("$say $(message)");
-        $`schedule function ${Helper} 1s`;
-        $(Helper);
-        $(() => $.say("inline"));
+        $(`schedule function ${fnId(Helper)} 1s`);
+        $.execute.as("@a").run("say hi");
       }),
-    ).toBe("$say $(message)\nschedule function pk:gen/main/helper 1s\nfunction pk:gen/main/helper\nsay inline\n");
+    ).toBe("$say $(message)\nschedule function pk:gen/main/helper 1s\nexecute as @a run say hi\n");
+    resetState(parseNamespace("pk:gen"));
+    function Bad() {
+      $(Helper as any);
+    }
+    meta(Bad, { file: "main.ts", name: "Bad", mcfunction: true });
+    expect(() => build()).toThrow(/To call a function, use \$\.function\(fn\)/);
   });
 
   it("starts a new line when a stored prefix is reused", () => {
@@ -477,5 +491,24 @@ describe("@dev entries", () => {
     }
     meta(Caller, { file: "main.ts", name: "Caller", mcfunction: true });
     expect(build()["data/pk/function/gen/main/caller.mcfunction"]).toBe("say ok\n");
+  });
+});
+
+describe("fnId", () => {
+  it("returns names immediately and is how $.function finds them", () => {
+    function Helper() {
+      $.say("h");
+    }
+    meta(Helper, { file: "a/b.ts", name: "Helper" });
+    let seen = "";
+    function Main() {
+      seen = fnId(Helper);
+      $.function(Helper);
+    }
+    meta(Main, { file: "main.ts", name: "Main", mcfunction: true });
+    const files = build();
+    expect(seen).toBe("pk:gen/a/b/helper");
+    expect(files["data/pk/function/gen/main/main.mcfunction"]).toBe("function pk:gen/a/b/helper\n");
+    expect(files["data/pk/function/gen/a/b/helper.mcfunction"]).toBe("say h\n");
   });
 });

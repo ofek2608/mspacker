@@ -21,7 +21,7 @@ export function Greet() {
   $.function(StartRound);
   $.function(Helper);
   // Multi-command callbacks become their own anonymous function.
-  $.execute.at("@p").run(() => {
+  $.execute.at("@p").run.function(() => {
     $.say("one");
     $.say("two");
   });

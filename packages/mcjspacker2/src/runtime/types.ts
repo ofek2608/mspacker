@@ -87,9 +87,6 @@ export interface LegacyTextComponentObject {
 /** A TS function (recorded into its own mcfunction) or a function id / `#tag` string. */
 export type FnRef = ((...args: never[]) => unknown) | string;
 
-/** What follows `run`: a callback (inlined when it emits one command), a function, or a raw command string. */
-export type RunTarget = (() => unknown) | string;
-
 export type EntityAnchor = "eyes" | "feet";
 export type GameModeId = "survival" | "creative" | "adventure" | "spectator";
 export type Heightmap = "world_surface" | "motion_blocking" | "motion_blocking_no_leaves" | "ocean_floor";

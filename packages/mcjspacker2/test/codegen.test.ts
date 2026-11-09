@@ -46,20 +46,20 @@ describe("generate", () => {
       for (const [name, content] of Object.entries(result.files)) writeFileSync(join(gen, name), content);
       writeFileSync(
         join(dir, "use.ts"),
-        `import { $ } from "./gen/index.js";
+        `import { $, fnId } from "./gen/index.js";
 export function Main() {
   $.tp("@a", "0 ~1 ~2");
   $.tp("@a")("^ ^1 ^2");
   $.tp("@a")("@p");
   $.execute.as("@a").if.entity("@s").run.say("x");
-  $.execute.as("@a").run(() => $.say("x"));
+  $.execute.as("@a").run.function(() => $.say("x"));
   $.execute.if.score("@s", "a")["<"]("@s", "b").run("say raw");
   $.function(Main);
   $.setblock("0 0 0", "stone");
   $.effect.give("@s", "minecraft:speed", 10);
   $.scoreboard.players.set("@s", "kills", 0);
   $("$say $(message)");
-  $\`function \${Main}\`;
+  $(\`function \${fnId(Main)}\`);
 }
 // @ts-expect-error wrong arity for a position
 $.setblock("0 1", "stone");
@@ -70,6 +70,8 @@ $.setblock([0, 1, 2], "stone");
 // String arguments as properties
 $.scoreboard.players.set("@s").kills(5);
 $.tp["@a"]("1 2 3");
+// @ts-expect-error functions are called with $.function, not $()
+$(() => 1);
 // @ts-expect-error unknown subcommand
 $.execute.sideways;
 // @ts-expect-error unknown command (the root takes no arguments as properties)

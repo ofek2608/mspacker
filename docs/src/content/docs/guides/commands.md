@@ -64,6 +64,18 @@ If your `tsconfig.json` enables `noUncheckedIndexedAccess`, write names in paren
 `$.team.modify("red")`.
 :::
 
+## Commands that end with a word
+
+A command that ends with a word is complete as it is:
+
+```ts
+$.time.set.day;
+$.team.modify.red.collision_rule.never;
+```
+
+Some linters warn about lines like these ("expected an assignment or function call"). Add `()` at
+the end if yours does: `$.time.set.day()`. Both write the same command.
+
 ## Splitting values
 
 Values can go in one pair of parentheses or several. These are the same:

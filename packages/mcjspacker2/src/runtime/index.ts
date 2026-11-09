@@ -4,7 +4,7 @@
  * Lowercase helpers avoid clashing with generated PascalCase commands (`Tag` is the `/tag` command,
  * `tag` registers a datapack tag).
  */
-import { addResource, addTag, devFlag, functionRef } from "./state.js";
+import { addResource, addTag, devFlag, fnId as functionId } from "./state.js";
 import type { FnRef } from "./types.js";
 
 export * from "./types.js";
@@ -34,7 +34,10 @@ export function resource(registry: string, id: string, data: unknown): void {
   addResource(registry, id, data);
 }
 
-/** Get the id of a function (recording it if needed). */
+/**
+ * The in-game name of a function (`mypack:main/helper`), making sure it's written to the pack.
+ * `$.function(fn)` uses it too. Strings (ids, `#tags`) are returned as-is.
+ */
 export function fnId(fn: FnRef): string {
-  return functionRef(fn);
+  return functionId(fn);
 }

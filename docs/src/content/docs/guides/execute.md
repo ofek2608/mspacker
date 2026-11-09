@@ -20,21 +20,18 @@ Anything can follow `run`, including another `execute`.
 
 ## Running several commands
 
-Give `run` a function to run several commands. If the function only has one command, it's written
-in place; otherwise mcjspacker2 creates a function file for it:
+Use `run.function` with a function, the same as calling a function anywhere else. A function
+written inline gets [a generated name](/guides/writing-functions/#functions-without-a-name):
 
 ```ts
-$.execute.as("@a").run(() => $.say("hi"));
-// execute as @a run say hi
+$.execute.as("@a").run.function(Reward);
+// execute as @a run function mypack:main/reward
 
-$.execute.as("@a").at("@s").run(() => {
+$.execute.as("@a").at("@s").run.function(() => {
   $.particle("heart", "~ ~2 ~");
   $.playsound("entity.player.levelup").master("@s");
 });
 // execute as @a at @s run function mypack:main/__anon/3f2a9c1d
-
-$.execute.as("@a").run(Reward);
-// execute as @a run function mypack:main/reward
 ```
 
 ## Without `run`

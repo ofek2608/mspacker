@@ -9,11 +9,11 @@
  *   `Give("@s", "diamond", 3)`. Sibling arguments (`tp <targets>` vs `tp <location>`) are tracked as
  *   candidates until the values decide.
  * - Redirects are followed, so `Run` lands on the root and `execute` needs no special handling.
- * - Calling the root emits raw text, a template, or a function as the command.
+ * - Calling the root writes a command given as text: `$("say hi")`, `....run("say hi")`.
  * - Every step returns a new proxy; the line is checked for completeness when its function ends.
  */
 import { parserDef } from "./parsers.js";
-import { beginCommand, emitLine, functionRef, getState, runTarget, type CommandEntry } from "./state.js";
+import { beginCommand, emitLine, getState, type CommandEntry } from "./state.js";
 
 /** Compact command tree node (generated from commands.json). */
 export interface TreeNode {
@@ -149,19 +149,13 @@ function formatArg(a: unknown): string {
   return typeof a === "function" ? `[function ${a.name || "anonymous"}]` : (JSON.stringify(a) ?? String(a));
 }
 
-/** Command text for a root call: a string, a template literal (functions become ids), or a function. */
+/** Text for a root call: `$("say hi")` or `....run("say hi")`. */
 function rootCallText(args: unknown[]): string {
-  const [first, ...rest] = args;
-  if (Array.isArray(first) && "raw" in first) {
-    const strings = first as unknown as TemplateStringsArray;
-    let out = strings[0] ?? "";
-    rest.forEach((v, i) => {
-      out += (typeof v === "function" ? functionRef(v) : String(v)) + (strings[i + 1] ?? "");
-    });
-    return out;
-  }
-  if (args.length === 1 && (typeof first === "string" || typeof first === "function")) return runTarget(first);
-  throw new Error(`Expected a command: a string, a template literal or a function, got (${args.map(formatArg).join(", ")}).`);
+  if (args.length === 1 && typeof args[0] === "string") return args[0];
+  throw new Error(
+    `$(...) takes one command as a string, got (${args.map(formatArg).join(", ")}). ` +
+      "To call a function, use $.function(fn).",
+  );
 }
 
 function currentBuffer(): unknown {

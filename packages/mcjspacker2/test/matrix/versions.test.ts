@@ -88,7 +88,7 @@ async function setupProject(version: string, commands: unknown) {
   writeFileSync(
     join(project, "tsconfig.json"),
     JSON.stringify({
-      compilerOptions: { target: "ES2023", module: "ESNext", moduleResolution: "bundler", strict: true, noEmit: true, skipLibCheck: true, types: [] },
+      compilerOptions: { target: "ES2023", module: "ESNext", moduleResolution: "bundler", strict: true, noImplicitOverride: true, noImplicitReturns: true, noFallthroughCasesInSwitch: true, noUnusedLocals: true, noUnusedParameters: true, noEmit: true, skipLibCheck: true, types: [] },
       include: ["src", ".mcjs2/gen"],
     }),
   );

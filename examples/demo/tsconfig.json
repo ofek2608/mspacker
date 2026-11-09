@@ -6,7 +6,16 @@
     "strict": true,
     "noEmit": true,
     "skipLibCheck": true,
-    "types": []
+    "types": [],
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true
   },
-  "include": ["src", ".mcjs2/gen", "mcjs2.config.ts"]
+  "include": [
+    "src",
+    ".mcjs2/gen",
+    "mcjs2.config.ts"
+  ]
 }

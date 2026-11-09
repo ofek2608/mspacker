@@ -29,7 +29,7 @@ export function Commands() {
   $.scoreboard.players.operation("#x", "mcjs2", "+=", "#x", "mcjs2");
   $.execute.store.result.score("#y", "mcjs2").run.scoreboard.players.get("#x", "mcjs2");
   $.execute.if.score("#x", "mcjs2")[">"]("#y", "mcjs2").run.say("gt");
-  $.execute.at("@p").run(() => {
+  $.execute.at("@p").run.function(() => {
     $.say("multi 1");
     $.say("multi 2");
   });
@@ -39,7 +39,6 @@ export function Commands() {
   $.function(Helper);
   $("say raw");
   $(`function ${fnId(Helper)}`);
-  $`function ${Helper}`;
   $.say("mcjs2-commands-ok");
 }
 
