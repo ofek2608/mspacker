@@ -20,14 +20,14 @@ import { $ } from "#mc";
 
 /** @mcfunction */
 export function StartRound() {
-  $.Tp("@a", "0 ~10 0");
-  $.Tellraw("@a", { text: "Fight!", color: "red" });
-  $.Execute.As("@a").At("@s").Run.Say("go!");
-  $.Function(Cleanup);
+  $.tp("@a", "0 ~10 0");
+  $.tellraw("@a", { text: "Fight!", color: "red" });
+  $.execute.as("@a").at("@s").run.say("go!");
+  $.function(Cleanup);
 }
 
 function Cleanup() {
-  $.Say("cleaning up");
+  $.say("cleaning up");
 }
 ```
 

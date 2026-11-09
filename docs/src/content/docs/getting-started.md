@@ -61,7 +61,7 @@ npm run dev     # rebuild into a dev server on every save and /reload it
 ```
 
 Your code imports `$` from `#mc`, a package import that points at the generated library. Every
-command hangs off it: `$.Say("hi")`, `$.Execute.As("@a").Run.Say("hi")`. See [commands](/guides/commands/).
+command hangs off it: `$.say("hi")`, `$.execute.as("@a").run.say("hi")`. See [commands](/guides/commands/).
 Run `gen` again whenever you change `version`.
 
 ## Your first function
@@ -73,12 +73,12 @@ import { $ } from "#mc";
 
 /** @load */
 export function Init() {
-  $.Say("Datapack loaded!");
+  $.say("Datapack loaded!");
 }
 
 /** @mcfunction */
 export function Greet() {
-  $.Execute.As("@a").At("@s").Run.Tellraw("@s", { text: "Hello!", color: "gold" });
+  $.execute.as("@a").at("@s").run.tellraw("@s", { text: "Hello!", color: "gold" });
 }
 ```
 

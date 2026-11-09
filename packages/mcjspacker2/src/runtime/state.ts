@@ -146,7 +146,7 @@ function finalize(items: BufferItem[], where: string): string[] {
     if (typeof item === "string") return item;
     const text = item.resolve();
     if (text === null) {
-      const e = new Error(`Incomplete command "${item.describe()}" in ${where}. Continue it, e.g. with .Run.Say(...).`);
+      const e = new Error(`Incomplete command "${item.describe()}" in ${where}. Continue it, e.g. with .run.say(...).`);
       // Point at the line that started the command, not at the end of the function.
       e.stack = `${e.name}: ${e.message}\n${item.origin.stack?.split("\n").slice(1).join("\n") ?? ""}`;
       throw e;
@@ -180,7 +180,7 @@ export function recordBody(fn: Function): string[] {
 // Anonymous ids are content hashes, so they are assigned after the queue is drained (bottom-up over
 // the reference graph) and the tokens are replaced when the output is rendered.
 //
-// The exception is `.Run(() => ...)`: an anonymous callback runs immediately, so it sees the
+// The exception is `.run(() => ...)`: an anonymous callback runs immediately, so it sees the
 // surrounding JS state, and is inlined when it emits a single command. That nests only as deep as
 // callbacks are nested in the source.
 

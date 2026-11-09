@@ -71,16 +71,38 @@ export function continuation(root: TreeNode, node: TreeNode): TreeNode {
   return node.r && node.r.length ? resolvePath(root, node.r) : node;
 }
 
-/** Property name for a literal: PascalCase, without a `minecraft:` prefix. Null if it isn't identifier-like. */
+/**
+ * Literals that can't be used as-is because JavaScript or tooling gives the name a meaning:
+ * a `then` property makes every chain look like a promise to `await`.
+ */
+export const RESERVED_LITERALS: Record<string, string> = { then: "then_", constructor: "constructor_", __proto__: "proto_" };
+
+/**
+ * Property name for a literal: snake_case without a `minecraft:` prefix, so old and new spellings
+ * agree (`keepInventory` and `minecraft:keep_inventory` are both `keep_inventory`, `ban-ip` is
+ * `ban_ip`). JS keywords are fine as property names (`$.function`, `$.execute.if`). Null if the
+ * literal isn't identifier-like (`<`, `*`): those are only reachable by their exact key.
+ */
 export function literalName(literal: string): string | null {
-  const bare = literal.replace(/^minecraft:/, "");
-  if (!/^[A-Za-z][A-Za-z0-9_-]*$/.test(bare)) return null;
-  return bare
-    .split(/[_-]+/)
-    .filter(Boolean)
-    .map((p) => p[0]!.toUpperCase() + p.slice(1))
-    .join("");
+  const name = literal
+    .replace(/^minecraft:/, "")
+    .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
+    .replace(/-/g, "_")
+    .toLowerCase();
+  if (!/^[a-z_][a-z0-9_]*$/.test(name)) return null;
+  return Object.hasOwn(RESERVED_LITERALS, name) ? RESERVED_LITERALS[name]! : name;
 }
+
+/**
+ * Properties that JavaScript, Node and test tools read on any value (`await` checks `then`,
+ * `console.log` and `JSON.stringify` probe others). They fall through instead of being reported
+ * as unknown subcommands.
+ */
+const PROBED = new Set([
+  "then", "catch", "finally", "toJSON", "toString", "valueOf", "toLocaleString", "constructor", "inspect",
+  "asymmetricMatch", "nodeType", "$$typeof", "__proto__", "prototype", "length", "name", "caller", "arguments",
+  "call", "apply", "bind", "hasOwnProperty", "isPrototypeOf", "propertyIsEnumerable",
+]);
 
 const literalIndex = new WeakMap<TreeNode, Map<string, string>>();
 
@@ -89,8 +111,10 @@ function literalsOf(node: TreeNode): Map<string, string> {
   let map = literalIndex.get(node);
   if (!map) {
     map = new Map();
-    for (const [key, child] of Object.entries(node.c ?? {})) if (child.l) map.set(key, key);
-    for (const key of [...map.keys()]) {
+    const keys = Object.entries(node.c ?? {}).filter(([, child]) => child.l).map(([key]) => key);
+    // Exact keys work too (`["<"]`), except reserved ones (`then` must stay a non-thenable).
+    for (const key of keys) if (!Object.hasOwn(RESERVED_LITERALS, key)) map.set(key, key);
+    for (const key of keys) {
       const name = literalName(key);
       if (name && !map.has(name)) map.set(name, key);
     }
@@ -176,7 +200,7 @@ export function createRoot(root: TreeNode): unknown {
             if (key !== undefined) cands.push({ node: src.c![key]!, parts: [...c.parts, key] });
           }
           if (cands.length) return proxyFor(advance(st, cands));
-          if (/^[A-Z]/.test(prop)) {
+          if (!PROBED.has(prop)) {
             const at = st.slot ? `after "${text(st.cands[0]!)}"` : "";
             throw new Error(`Unknown ${st.slot ? "subcommand" : "command"} "${prop}" ${at}`.trim() + ".");
           }

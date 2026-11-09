@@ -4,5 +4,5 @@ import { Helper } from "./base.js";
 
 /** @mcfunction */
 export function Scheduled() {
-  $.Schedule.Function(Helper, "1s");
+  $.schedule.function(Helper, "1s");
 }

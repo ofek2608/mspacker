@@ -71,7 +71,7 @@ describe("user-defined parsers", () => {
     resetState(parseNamespace("pk"), { version: "t", packFormat: 108 });
     const $ = createRoot(compactTree(commands)) as any;
     function Main() {
-      $.Tp({ x: 1, y: 2, z: 3 });
+      $.tp({ x: 1, y: 2, z: 3 });
     }
     meta(Main, { file: "m.ts", name: "Main", mcfunction: true });
     expect(collectOutput().files.get("data/pk/function/m/main.mcfunction")).toBe("tp 1 2 3\n");

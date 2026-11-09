@@ -80,7 +80,7 @@ use `nbt`:
 ```ts
 import { $, nbt } from "#mc";
 
-$.Summon("pig", "~ ~ ~", { NoAI: nbt.byte(1), Health: nbt.float(5), UUID: nbt.intArray([1, 2, 3, 4]) });
+$.summon("pig", "~ ~ ~", { NoAI: nbt.byte(1), Health: nbt.float(5), UUID: nbt.intArray([1, 2, 3, 4]) });
 // summon pig ~ ~ ~ {NoAI:1b,Health:5f,UUID:[I;1,2,3,4]}
 ```
 

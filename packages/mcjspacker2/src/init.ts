@@ -85,12 +85,12 @@ export default defineConfig({
 
 /** @load */
 export function Init() {
-  $.Say("Datapack loaded!");
+  $.say("Datapack loaded!");
 }
 
 /** @mcfunction */
 export function Greet() {
-  $.Execute.As("@a").At("@s").Run.Tellraw("@s", { text: "Hello!", color: "gold" });
+  $.execute.as("@a").at("@s").run.tellraw("@s", { text: "Hello!", color: "gold" });
 }
 `,
   );

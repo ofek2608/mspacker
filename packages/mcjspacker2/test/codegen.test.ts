@@ -13,7 +13,7 @@ describe("generate", () => {
   it("types $ with one interface per node: literals are properties, arguments are calls", () => {
     expect(result.stats.commands).toBe(13);
     expect(commands).toContain("export const $ = createRoot(tree) as Commands;");
-    expect(commands).toMatch(/\/\*\* `tp` \*\/\n  readonly Tp: N\d+;/);
+    expect(commands).toMatch(/\/\*\* `tp` \*\/\n  readonly tp: N\d+;/);
     expect(commands).toMatch(/\(targets: Selector, location: Vec3, rotation: Rotation\): N\d+;/);
   });
 
@@ -23,7 +23,7 @@ describe("generate", () => {
   });
 
   it("uses the target's type for redirects", () => {
-    expect(commands).toMatch(/\/\*\* `execute run` \*\/\n  readonly Run: Commands;/);
+    expect(commands).toMatch(/\/\*\* `execute run` \*\/\n  readonly run: Commands;/);
     expect(commands).toContain('readonly "<": ');
   });
 
@@ -48,29 +48,29 @@ describe("generate", () => {
         join(dir, "use.ts"),
         `import { $ } from "./gen/index.js";
 export function Main() {
-  $.Tp("@a", "0 ~1 ~2");
-  $.Tp("@a")("^ ^1 ^2");
-  $.Tp("@a")("@p");
-  $.Execute.As("@a").If.Entity("@s").Run.Say("x");
-  $.Execute.As("@a").Run(() => $.Say("x"));
-  $.Execute.If.Score("@s", "a")["<"]("@s", "b").Run("say raw");
-  $.Function(Main);
-  $.Setblock("0 0 0", "stone");
-  $.Effect.Give("@s", "minecraft:speed", 10);
-  $.Scoreboard.Players.Set("@s", "kills", 0);
+  $.tp("@a", "0 ~1 ~2");
+  $.tp("@a")("^ ^1 ^2");
+  $.tp("@a")("@p");
+  $.execute.as("@a").if.entity("@s").run.say("x");
+  $.execute.as("@a").run(() => $.say("x"));
+  $.execute.if.score("@s", "a")["<"]("@s", "b").run("say raw");
+  $.function(Main);
+  $.setblock("0 0 0", "stone");
+  $.effect.give("@s", "minecraft:speed", 10);
+  $.scoreboard.players.set("@s", "kills", 0);
   $("$say $(message)");
   $\`function \${Main}\`;
 }
 // @ts-expect-error wrong arity for a position
-$.Setblock("0 1", "stone");
+$.setblock("0 1", "stone");
 // @ts-expect-error local and world coordinates can't mix
-$.Setblock("0 ~1 ^", "stone");
+$.setblock("0 ~1 ^", "stone");
 // @ts-expect-error positions are strings, not arrays
-$.Setblock([0, 1, 2], "stone");
+$.setblock([0, 1, 2], "stone");
 // @ts-expect-error unknown subcommand
-$.Execute.Sideways;
+$.execute.sideways;
 // @ts-expect-error literals are properties, not string arguments
-$.Effect("give", "@s", "speed");
+$.effect("give", "@s", "speed");
 `,
       );
       writeFileSync(

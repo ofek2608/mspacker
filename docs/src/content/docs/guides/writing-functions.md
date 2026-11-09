@@ -11,7 +11,7 @@ and every command call appends one line to the function that is being recorded:
 ```ts
 /** @mcfunction */
 export function Countdown() {
-  for (let i = 3; i > 0; i--) $.Say(`${i}...`);
+  for (let i = 3; i > 0; i--) $.say(`${i}...`);
 }
 ```
 
@@ -24,10 +24,10 @@ say 1...
 This means:
 
 - `if`, loops, variables and helper functions are evaluated at build time. A loop unrolls into
-  repeated commands. To branch in game, use [`$.Execute`](/guides/execute/).
+  repeated commands. To branch in game, use [`$.execute`](/guides/execute/).
 - You can use any npm package or Node API to compute commands (read a JSON file, generate a grid of
   positions, ...).
-- Commands must run inside a function. Calling `$.Say(...)` at the top level of a module is an error.
+- Commands must run inside a function. Calling `$.say(...)` at the top level of a module is an error.
 
 ## Entry points
 
@@ -50,27 +50,27 @@ There are two ways to use another function, and they produce different output:
 ```ts
 /** @mcfunction */
 export function Main() {
-  $.Function(Helper); // function mypack:main/helper
+  $.function(Helper); // function mypack:main/helper
   Helper();           // say helper  (inlined)
 }
 
 function Helper() {
-  $.Say("helper");
+  $.say("helper");
 }
 ```
 
-- `$.Function(Helper)` emits a `function` command. `Helper` gets its own file even though it has no
-  tag, because it is referenced. The same happens for `.Run(Helper)`, `$(Helper)`, `fnId(Helper)` and
+- `$.function(Helper)` emits a `function` command. `Helper` gets its own file even though it has no
+  tag, because it is referenced. The same happens for `.run(Helper)`, `$(Helper)`, `fnId(Helper)` and
   `tag("function", ..., [Helper])`.
 - `Helper()` is a normal JavaScript call: its commands are written into `Main`.
 
 Untagged functions that are never referenced aren't emitted. Recursion works: a function can
-reference itself with `$.Function(Self)`.
+reference itself with `$.function(Self)`.
 
 ### Recording order
 
 Referenced functions are recorded one at a time, after the function that references them, not in
-the middle of it. `$.Function(Helper)` writes the id and queues `Helper`. Long chains of functions
+the middle of it. `$.function(Helper)` writes the id and queues `Helper`. Long chains of functions
 calling each other therefore don't build up the JavaScript call stack.
 
 `Run(() => ...)` callbacks are the exception: they run right away, so they see your variables as
@@ -88,17 +88,17 @@ their commands: `mypack:main/__anon/77186eb6`. Two anonymous functions with iden
 share one file.
 
 ```ts
-$.Execute.At("@p").Run(() => {
-  $.Say("one");
-  $.Say("two");
+$.execute.at("@p").run(() => {
+  $.say("one");
+  $.say("two");
 });
 // execute at @p run function mypack:main/__anon/77186eb6
 ```
 
-A `Run` callback that emits exactly one command is inlined instead:
+A `run` callback that emits exactly one command is inlined instead:
 
 ```ts
-$.Execute.As("@a").Run(() => $.Say("hi")); // execute as @a run say hi
+$.execute.as("@a").run(() => $.say("hi")); // execute as @a run say hi
 ```
 
 ## Parameterizing with JavaScript
@@ -111,8 +111,8 @@ const colors = ["red", "green", "blue"] as const;
 /** @load */
 export function SetupTeams() {
   for (const c of colors) {
-    $.Team.Add(c);
-    $.Team.Modify(c).Color(c);
+    $.team.add(c);
+    $.team.modify(c).color(c);
   }
 }
 ```

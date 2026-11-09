@@ -8,17 +8,18 @@ import { $ } from "#mc";
 
 /** @mcfunction */
 export function StartRound() {
-  $.Tp("@a", "0 ~10 0");
-  $.Execute.As("@a").At("@s").Run.Say("go!");
-  $.Scoreboard.Players.Set("@s", "kills", 0);
-  $.Function(Helper);
+  $.tp("@a", "0 ~10 0");
+  $.execute.as("@a").at("@s").run.say("go!");
+  $.scoreboard.players.set("@s", "kills", 0);
+  $.function(Helper);
 }
 
-function Helper() { $.Say("helper"); }   // emitted because StartRound references it
+function Helper() { $.say("helper"); }   // emitted because StartRound references it
 ```
 
-Commands are a chain on `$`: literal words are properties (`$.Scoreboard.Players`), arguments are
-calls (`Set("@s", "kills", 0)`, or split: `Set("@s")("kills", 0)`). `Run` leads back to `$`. Each `$.`
+Commands are a chain on `$`: literal words are properties, in snake_case as Minecraft writes them
+(`$.scoreboard.players`, `$.gamerule.keep_inventory`, `$.function`), arguments are calls
+(`set("@s", "kills", 0)`, or split: `set("@s")("kills", 0)`). `run` leads back to `$`. Each `$.`
 starts a line, which must be a complete command when the function ends.
 
 Full documentation: the Starlight site in [`docs/`](../../docs) (`pnpm docs` from the repo root).
@@ -36,7 +37,7 @@ The version list has the latest release and snapshot, the latest patch of every 
 every 1.21 game drop, and the April Fools versions at the bottom. **Other version…** searches every version
 with data packs. Non-interactive: `npm create mcjspacker2@latest my-pack -- --version 26.3 --namespace mypack --yes`.
 
-**Positions** are strings, as in game: `$.Tp("@s", "~ ~1 ~")`, `$.Setblock("0 64 0", "stone")`.
+**Positions** are strings, as in game: `$.tp("@s", "~ ~1 ~")`, `$.setblock("0 64 0", "stone")`.
 
 **Server jar.** If the server dir contains a jar, it is used as-is. The server dir is
 `server.dir` in the config, the `MCJS2_SERVER_DIR` env var, or `<project>/server` by default.
@@ -74,18 +75,18 @@ export default defineConfig({
 ## How functions map to files
 
 - **Entry points.** JSDoc `@mcfunction` makes a function an entry point. `@load` / `@tick` also add it to `#minecraft:load` / `#minecraft:tick`.
-- **Other functions.** Functions without a tag are emitted only when referenced (`$.Function(fn)`, `.Run(fn)`, `$(fn)`, `fnId(fn)`, `tag(...)`).
+- **Other functions.** Functions without a tag are emitted only when referenced (`$.function(fn)`, `.run(fn)`, `$(fn)`, `fnId(fn)`, `tag(...)`).
 - **Ids.** The id is `<namespace>:<prefix><file path>/<function name>`. Every path segment is converted by inserting `_` before each capital letter except the first, then lowercasing. For example, `src/combat/Arena.ts` → `function StartRound` gives `mypack:generated/combat/arena/start_round`.
 - **Overrides.** `/** @mcfunction other:path */` is absolute. `/** @mcfunction path */` is relative to the namespace prefix.
 - **Anonymous functions.** Arrows and names that can't be parsed get `…/<file>/__anon/<hash of body>`. The name is deterministic, and identical bodies are shared.
-- **`.Run(cb)` callbacks.** A callback that emits one command is inlined. Otherwise it becomes an anonymous function.
+- **`.run(cb)` callbacks.** A callback that emits one command is inlined. Otherwise it becomes an anonymous function.
 
 ## Build-time semantics
 
 Your TypeScript runs **at build time**. Each command call appends one line to the function being recorded. As a result:
 
 - `if`/`for`/variables are compile-time: a loop unrolls into repeated commands.
-- Calling a helper directly (`Helper()`) inlines its commands. Use `$.Function(Helper)` to emit a `function` call instead.
+- Calling a helper directly (`Helper()`) inlines its commands. Use `$.function(Helper)` to emit a `function` call instead.
 - Calling a command at module top level is an error. Commands must run inside a function.
 
 ## Escape hatches
