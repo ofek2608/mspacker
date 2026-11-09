@@ -52,7 +52,7 @@ describe("user-defined parsers", () => {
   it("override types in codegen", () => {
     setParserOverrides({ "minecraft:vec3": { type: "MyVec" } });
     const out = generate(commands, registries, { version: "t", packFormat: 108 }).files["commands.ts"]!;
-    expect(out).toContain("(location: MyVec): N");
+    expect(out).toContain("(location: Arg<MyVec>): N");
   });
 
   it("accept version-dependent type functions and silence unknown-parser warnings", () => {
@@ -61,7 +61,7 @@ describe("user-defined parsers", () => {
     setParserOverrides({ "minecraft:brand_new": { type: (_p, c) => (c.packFormat >= 200 ? "`new:${string}`" : "string") } });
     const r = generate(tree, {}, { version: "t", packFormat: 200 });
     expect(r.warnings).toEqual([]);
-    expect(r.files["commands.ts"]).toMatch(/\(v: `new:\$\{string\}`\): N\d+;/);
+    expect(r.files["commands.ts"]).toMatch(/\(v: Arg<`new:\$\{string\}`>\): N\d+;/);
   });
 
   it("override test/serialize at build time", () => {

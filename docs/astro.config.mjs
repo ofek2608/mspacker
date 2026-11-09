@@ -18,6 +18,7 @@ export default defineConfig({
             "guides/commands",
             "guides/execute",
             "guides/function-ids",
+            "guides/macros",
             "guides/raw-content",
             "guides/dev-mode",
           ],

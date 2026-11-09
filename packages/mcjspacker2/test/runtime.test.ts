@@ -535,3 +535,81 @@ describe("function property names as values", () => {
     expect(build()["data/pk/function/gen/main/main.mcfunction"]).toBe("scoreboard players set @s name 5\n");
   });
 });
+
+describe("macro functions", () => {
+  it("turns parameters into macro arguments and lines that use them into macro lines", () => {
+    function Teleport(args: any) {
+      $.say("start");
+      $.tp(args.target, args.pos);
+      $.scoreboard.players.set(args.target, "obj", args.amount);
+      $(`tp @s ${args.destination}`);
+      $.tellraw("@a", { text: args.name.quoted, color: "red" });
+      $.function("pk:other", { Count: args.amount, Name: args.name.quoted });
+    }
+    meta(Teleport, { file: "main.ts", name: "Teleport", mcfunction: true });
+    expect(build()["data/pk/function/gen/main/teleport.mcfunction"]).toBe(
+      [
+        "say start",
+        "$tp $(target) $(pos)",
+        "$scoreboard players set $(target) obj $(amount)",
+        "$tp @s $(destination)",
+        '$tellraw @a {text:"$(name)",color:"red"}',
+        '$function pk:other {Count:$(amount),Name:"$(name)"}',
+        "",
+      ].join("\n"),
+    );
+  });
+
+  it("writes macro arguments as JSON strings in text before SNBT text components", () => {
+    function Hello(args: any) {
+      $.tellraw("@a", { text: args.name });
+      $.tellraw("@a", { text: args.name.quoted });
+    }
+    meta(Hello, { file: "main.ts", name: "Hello", mcfunction: true });
+    resetState(parseNamespace("pk:gen"), { version: "1.20.4", packFormat: 26 });
+    meta(Hello, { file: "main.ts", name: "Hello", mcfunction: true });
+    expect(build(26)["data/pk/functions/gen/main/hello.mcfunction"]).toBe(
+      '$tellraw @a {"text":"$(name)"}\n$tellraw @a {"text":"$(name)"}\n',
+    );
+  });
+
+  it("calls macro functions with arguments through the normal function command", () => {
+    function Greet(args: any) {
+      $.say(`hi ${args.name}`);
+    }
+    function Main() {
+      $.function(Greet, { name: "Steve" });
+      $.function(Greet).with.storage("pk:s", "args");
+    }
+    meta(Greet, { file: "main.ts", name: "Greet" });
+    meta(Main, { file: "main.ts", name: "Main", mcfunction: true });
+    const files = build();
+    expect(files["data/pk/function/gen/main/main.mcfunction"]).toBe(
+      'function pk:gen/main/greet {name:"Steve"}\nfunction pk:gen/main/greet with storage pk:s args\n',
+    );
+    expect(files["data/pk/function/gen/main/greet.mcfunction"]).toBe("$say hi $(name)\n");
+  });
+
+  it("rejects macro arguments used in another function", () => {
+    function Outer(args: any) {
+      $.function(() => $.say(args.name));
+    }
+    meta(Outer, { file: "main.ts", name: "Outer", mcfunction: true });
+    expect(() => build()).toThrow(/uses the macro argument "name" of another function.*pass it on/);
+  });
+
+  it("rejects names the game doesn't accept and old versions", () => {
+    function Bad(args: any) {
+      $.say(args["Pos[0]"]);
+    }
+    meta(Bad, { file: "main.ts", name: "Bad", mcfunction: true });
+    expect(() => build()).toThrow(/Invalid macro argument name "Pos\[0\]".*letters, digits and _/);
+
+    resetState(parseNamespace("pk:gen"), { version: "1.20.1", packFormat: 15 });
+    function Old(args: any) {
+      $.say(args.x);
+    }
+    meta(Old, { file: "main.ts", name: "Old", mcfunction: true });
+    expect(() => build(15)).toThrow(/Macros need Minecraft 1.20.2 or newer/);
+  });
+});

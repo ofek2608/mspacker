@@ -8,6 +8,7 @@ import { addResource, addTag, devFlag, fnId as functionId } from "./state.js";
 import type { FnRef } from "./types.js";
 
 export * from "./types.js";
+export type { Macro, MacroArg } from "./macro.js";
 export { nbt, snbt } from "./nbt.js";
 export { createRoot, literalName, type TreeNode } from "./command.js";
 

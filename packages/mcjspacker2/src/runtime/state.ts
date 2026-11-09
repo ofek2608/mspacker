@@ -7,6 +7,10 @@
  */
 import { createHash } from "node:crypto";
 import type { ParserContext } from "./parsers.js";
+import { macroArgs, MACRO_REF } from "./macro.js";
+
+/** Data pack format of 1.20.2, the first version with function macros. */
+const FORMAT_MACROS = 18;
 import { anonymousId, namedFunctionId, overrideId, splitId, type NamespaceSpec } from "./naming.js";
 
 export interface FnMeta {
@@ -59,6 +63,8 @@ export interface State {
   bodies: Map<Function, string[]>;
   /** Functions waiting to be recorded, in order. */
   queue: Function[];
+  /** Names of every macro argument handed out so far (to find them in other functions' lines). */
+  macroNames: Set<string>;
   /** Anonymous functions, by placeholder number; named once everything is recorded. */
   anonymous: { fn: Function; origin: string; lines: string[] }[];
   functions: Map<string, FunctionRecord>;
@@ -108,6 +114,7 @@ export function resetState(
     bodies: new Map(),
     queue: [],
     anonymous: [],
+    macroNames: new Set(),
     functions: new Map(),
     stack: [],
     tags: new Map(),
@@ -180,16 +187,43 @@ export function recordBody(fn: Function): string[] {
   const s = getState();
   const cached = s.bodies.get(fn);
   if (cached) return cached;
+  const meta = s.metas.get(fn);
+  const where = describe(fn, meta);
+  // A function with a parameter is a macro function: the parameter hands out macro arguments.
+  const used = new Set<string>();
+  const macro = fn.length > 0;
+  if (macro) {
+    if (s.ctx.packFormat < FORMAT_MACROS) {
+      throw new Error(`${where} has a parameter, which makes it a macro function. Macros need Minecraft 1.20.2 or newer.`);
+    }
+  }
   const buf: BufferItem[] = [];
   s.stack.push(buf);
   try {
-    fn();
+    if (macro) fn(macroArgs(used, s.macroNames, where));
+    else fn();
   } finally {
     s.stack.pop();
   }
-  const lines = finalize(buf, describe(fn, s.metas.get(fn)));
+  const lines = finalize(buf, where).map((line) => macroLine(line, used, where));
   s.bodies.set(fn, lines);
   return lines;
+}
+
+/** Lines that use the function's macro arguments become macro lines (`$...`). */
+function macroLine(line: string, used: Set<string>, where: string): string {
+  if (line.startsWith("$")) return line;
+  const s = getState();
+  const names = [...line.matchAll(MACRO_REF)].map((m) => m[1]!).filter((n) => s.macroNames.has(n));
+  if (!names.length) return line;
+  const foreign = names.find((n) => !used.has(n));
+  if (foreign) {
+    throw new Error(
+      `${where} uses the macro argument "${foreign}" of another function in "${line}". Macro arguments only work in ` +
+        `their own function's commands. To use one in a function you call, pass it on: $.function(Other, { ${foreign}: args.${foreign} }).`,
+    );
+  }
+  return "$" + line;
 }
 
 // ---------------------------------------------------------------- function ids

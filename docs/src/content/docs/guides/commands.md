@@ -113,7 +113,7 @@ atPlayers.run.say("two");   // execute as @a at @s run say two
 ## Writing a command as text
 
 Calling `$` itself writes a line exactly as you give it. Use it for anything mcjspacker2 doesn't
-cover, or for [macro lines](https://minecraft.wiki/w/Function_(Java_Edition)#Macros):
+cover, or for macro lines (usually [macro functions](/guides/macros/) are easier):
 
 ```ts
 $("say written as-is");

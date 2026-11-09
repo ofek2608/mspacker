@@ -13,6 +13,7 @@
  * - Every step returns a new proxy; the line is checked for completeness when its function ends.
  */
 import { parserDef } from "./parsers.js";
+import { isMacroArg } from "./macro.js";
 import { beginCommand, emitLine, getState, type CommandEntry } from "./state.js";
 
 /** Compact command tree node (generated from commands.json). */
@@ -214,6 +215,11 @@ export function createRoot(root: TreeNode): unknown {
       const src = continuation(root, c.node);
       for (const child of Object.values(src.c ?? {})) {
         if (child.l) continue;
+        // A macro argument fits any argument (its type is checked by TypeScript only).
+        if (isMacroArg(value)) {
+          next.push({ node: child, parts: [...c.parts, value.text] });
+          continue;
+        }
         const def = parserDef(child.p ?? "");
         if (!def.test(value, child.o, ctx)) continue;
         try {

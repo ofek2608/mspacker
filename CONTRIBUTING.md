@@ -39,6 +39,10 @@ In `examples/demo`: `npx mcjs2 gen`, `npx mcjs2 build`, `npx mcjs2 dev`.
      anonymous ones get a placeholder, and once everything is recorded they're named by a hash of
      their commands (references first, cycles by position) and the placeholders are replaced.
    - `parsers.ts`: the argument type registry (see below).
+   - `macro.ts`: macro functions. A recorded function with a parameter gets an `args` proxy whose
+     properties are markers (`$(name)`); every argument accepts a marker as-is (types check them via
+     `Arg<T>` in generated signatures), SNBT writes them raw, and lines that contain the function's
+     own markers get the `$` prefix when the function ends.
 4. **pack** (`src/build/pack.ts`): merge with the raw `datapack/` dir, write `pack.mcmeta`, handle
    old folder names.
 5. **dev** (`src/dev/`): watch, rebuild into the server world or a save, `/reload` over RCON.

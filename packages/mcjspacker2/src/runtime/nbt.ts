@@ -1,4 +1,5 @@
 /** SNBT serialization with typed wrappers for numeric tags and arrays. */
+import type { MacroArg } from "./macro.js";
 
 const NBT = Symbol.for("mcjspacker2.nbt");
 
@@ -26,6 +27,7 @@ export type NbtValue =
   | TypedNumber
   | TypedArray
   | RawSnbt
+  | MacroArg<unknown>
   | NbtValue[]
   | { [key: string]: NbtValue | undefined };
 export type NbtCompound = { [key: string]: NbtValue | undefined };

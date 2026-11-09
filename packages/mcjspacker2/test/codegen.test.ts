@@ -14,12 +14,12 @@ describe("generate", () => {
     expect(result.stats.commands).toBe(13);
     expect(commands).toContain("export const $ = createRoot(tree) as Commands;");
     expect(commands).toMatch(/\/\*\* `tp` \*\/\n  readonly tp: N\d+;/);
-    expect(commands).toMatch(/\(targets: Selector, location: Vec3, rotation: Rotation\): N\d+;/);
+    expect(commands).toMatch(/\(targets: Arg<Selector>, location: Arg<Vec3>, rotation: Arg<Rotation>\): N\d+;/);
   });
 
   it("merges sibling arguments of the same type", () => {
     expect(commands).toContain("/** `tp <destination>` or `tp <targets>` */");
-    expect(commands).toMatch(/\(destination: Selector\): N\d+ & N\d+;/);
+    expect(commands).toMatch(/\(destination: Arg<Selector>\): N\d+ & N\d+;/);
   });
 
   it("uses the target's type for redirects", () => {
@@ -28,7 +28,7 @@ describe("generate", () => {
   });
 
   it("uses registry id unions", () => {
-    expect(commands).toContain('(pos: BlockPos, block: Id<"block">)');
+    expect(commands).toContain('(pos: Arg<BlockPos>, block: Arg<Id<"block">>)');
     expect(result.files["registries.ts"]).toContain('"block": ');
   });
 

@@ -109,7 +109,7 @@ export function generate(
       .map((p) => {
         const n = seen.get(p.name) ?? 0;
         seen.set(p.name, n + 1);
-        return `${safeIdent(n ? `${p.name}${n + 1}` : p.name)}: ${p.type}`;
+        return `${safeIdent(n ? `${p.name}${n + 1}` : p.name)}: Arg<${p.type}>`;
       })
       .join(", ");
   }
@@ -216,6 +216,8 @@ export function generate(
     `import { tree } from "./tree.js";\n\n` +
     usedTypeAliases(out.join("\n")) +
     "\n\n" +
+    "/** A value, or a macro argument of a fitting type. */\n" +
+    "type Arg<T> = T | R.MacroArg<T>;\n\n" +
     "/** A string argument written as a property: `.red` for `(\"red\")`. */\n" +
     "type PropArg<T, Next> = { readonly [K in Extract<T, string>]: Next };\n\n" +
     "/** Names every JavaScript function has, so they can't be values written as properties. */\n" +

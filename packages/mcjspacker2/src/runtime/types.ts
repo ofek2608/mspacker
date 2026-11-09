@@ -1,5 +1,9 @@
 /** Static argument types used by the generated command library. */
+import type { MacroArg } from "./macro.js";
 import type { NbtCompound, NbtValue } from "./nbt.js";
+
+/** A value, or a macro argument of that type. */
+type Arg<T> = T | MacroArg<T>;
 
 export type { NbtCompound, NbtValue };
 
@@ -39,21 +43,21 @@ export type Duration = number | `${number}` | `${number}${"d" | "s" | "t"}`;
 /** Text component in SNBT form. */
 export type TextComponent = string | TextComponentObject | TextComponent[];
 export interface TextComponentObject {
-  text?: string;
-  translate?: string;
+  text?: Arg<string>;
+  translate?: Arg<string>;
   with?: TextComponent[];
-  score?: { name: string; objective: string };
-  selector?: string;
-  keybind?: string;
-  nbt?: string;
-  color?: string;
-  bold?: boolean;
-  italic?: boolean;
-  underlined?: boolean;
-  strikethrough?: boolean;
-  obfuscated?: boolean;
-  font?: string;
-  insertion?: string;
+  score?: { name: Arg<string>; objective: Arg<string> };
+  selector?: Arg<string>;
+  keybind?: Arg<string>;
+  nbt?: Arg<string>;
+  color?: Arg<string>;
+  bold?: Arg<boolean>;
+  italic?: Arg<boolean>;
+  underlined?: Arg<boolean>;
+  strikethrough?: Arg<boolean>;
+  obfuscated?: Arg<boolean>;
+  font?: Arg<string>;
+  insertion?: Arg<string>;
   extra?: TextComponent[];
   click_event?: NbtCompound;
   hover_event?: NbtCompound;
@@ -63,23 +67,23 @@ export interface TextComponentObject {
 /** Text component for versions before 1.21.5 (JSON form, camelCase event keys). */
 export type LegacyTextComponent = string | LegacyTextComponentObject | LegacyTextComponent[];
 export interface LegacyTextComponentObject {
-  text?: string;
-  translate?: string;
+  text?: Arg<string>;
+  translate?: Arg<string>;
   with?: LegacyTextComponent[];
-  score?: { name: string; objective: string };
-  selector?: string;
-  keybind?: string;
-  nbt?: string;
-  color?: string;
-  bold?: boolean;
-  italic?: boolean;
-  underlined?: boolean;
-  strikethrough?: boolean;
-  obfuscated?: boolean;
-  font?: string;
-  insertion?: string;
+  score?: { name: Arg<string>; objective: Arg<string> };
+  selector?: Arg<string>;
+  keybind?: Arg<string>;
+  nbt?: Arg<string>;
+  color?: Arg<string>;
+  bold?: Arg<boolean>;
+  italic?: Arg<boolean>;
+  underlined?: Arg<boolean>;
+  strikethrough?: Arg<boolean>;
+  obfuscated?: Arg<boolean>;
+  font?: Arg<string>;
+  insertion?: Arg<string>;
   extra?: LegacyTextComponent[];
-  clickEvent?: { action: string; value: string };
+  clickEvent?: { action: Arg<string>; value: Arg<string> };
   hoverEvent?: { action: string; value?: unknown; contents?: unknown };
   [key: string]: unknown;
 }

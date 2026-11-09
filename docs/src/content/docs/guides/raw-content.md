@@ -54,7 +54,7 @@ The first argument is the folder under `data/<namespace>/`: `advancement`, `pred
 ## Commands as text
 
 Calling `$` writes a command exactly as you give it. Use it for anything mcjspacker2 doesn't cover,
-or for macro lines:
+or for macro lines (usually [macro functions](/guides/macros/) are easier):
 
 ```ts
 import { $, fnId } from "#mc";

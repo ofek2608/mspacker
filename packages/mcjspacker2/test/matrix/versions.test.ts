@@ -245,6 +245,7 @@ matrix.each(VERSIONS)("Minecraft %s", (version) => {
         const fns = LOAD_ONLY[version] ? [] : ["matrix:gen/base/commands", "matrix:gen/custom/renamed", "matrix:gen/base/tick", "#matrix:all"];
         if (included.includes("storage") && !LOAD_ONLY[version]) fns.push("matrix:gen/storage/storage");
         if (included.includes("schedule") && !LOAD_ONLY[version]) fns.push("matrix:gen/schedule/scheduled");
+        if (included.includes("macro") && !LOAD_ONLY[version]) fns.push("matrix:gen/macro/macros");
         for (const fn of fns) {
           results[fn] = await rcon.command(`function ${fn}`);
         }
@@ -276,6 +277,11 @@ matrix.each(VERSIONS)("Minecraft %s", (version) => {
           // The server can log a function's output after answering the RCON command that ran it.
           await waitFor(child, /mcjs2-commands-ok/, 30_000, output).catch(() => {});
           expect(output.text, "commands function ran to the end").toContain("mcjs2-commands-ok");
+          if (included.includes("macro")) {
+            await waitFor(child, /mcjs2-macro-ok yo 2/, 30_000, output).catch(() => {});
+            expect(output.text, "macro function ran with arguments").toContain("mcjs2-macro-ok hi 5");
+            expect(output.text, "macro function ran with storage").toContain("mcjs2-macro-ok yo 2");
+          }
         }
         expect(failed.map((f) => `${f.probe.line} -> ${f.error}`), `parser probes on ${version}`).toEqual([]);
         await rcon.command("stop");

@@ -16,6 +16,7 @@
  */
 import { snbt, quoteString, type NbtValue } from "./nbt.js";
 import { fnId } from "./state.js";
+import { hasMacroArg } from "./macro.js";
 
 export type Props = Record<string, unknown> | undefined;
 
@@ -193,7 +194,9 @@ function hasTypedNbt(v: unknown): boolean {
 const textComponent: ParserDef = {
   type: (_p, ctx) => (ctx.packFormat >= FORMAT_SNBT_TEXT ? "TextComponent" : "LegacyTextComponent"),
   test: (v) => isStr(v) || isObj(v),
-  serialize: (v) => (hasTypedNbt(v) ? snbt(v as NbtValue) : JSON.stringify(v)),
+  // Before SNBT text, macro arguments go into the JSON as strings ("$(name)").
+  serialize: (v, _p, ctx) =>
+    hasTypedNbt(v) && !(ctx.packFormat < FORMAT_SNBT_TEXT && hasMacroArg(v)) ? snbt(v as NbtValue) : JSON.stringify(v),
   examples: (_p, ctx) => [
     "probe",
     { text: "probe", color: "red", bold: true, extra: [{ text: "!" }] },
