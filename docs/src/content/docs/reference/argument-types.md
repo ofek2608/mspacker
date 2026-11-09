@@ -4,12 +4,12 @@ description: The TypeScript type and output of every command argument.
 ---
 
 Every command argument in Minecraft names a parser, like `minecraft:vec3` or `brigadier:integer`.
-mcjspacker2 maps each parser to a TypeScript type, a runtime check that picks between overloads,
+mcjspacker2 maps each parser to a TypeScript type, a runtime check that picks between sibling syntaxes,
 and a serializer. This page lists them. Types are exported from `#mc`, so you can use them in your
 own helpers:
 
 ```ts
-import { type BlockPos, Setblock } from "#mc";
+import { $, type BlockPos } from "#mc";
 
 function pillar(base: BlockPos, height: number) { /* ... */ }
 ```

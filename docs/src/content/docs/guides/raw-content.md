@@ -53,20 +53,24 @@ The first argument is the folder under `data/<namespace>/`: `advancement`, `pred
 
 ## Raw commands
 
-`raw` writes a line into the current function as-is. Use it for commands or syntax the library
-doesn't cover, such as macro lines:
+Calling `$` writes a line into the current function as-is. Use it for commands or syntax the
+library doesn't cover, such as macro lines:
 
 ```ts
-import { fnId, raw } from "#mc";
+import { $, fnId } from "#mc";
 
 /** @mcfunction */
 export function Main() {
-  raw("say this line is copied verbatim");
-  raw(`schedule function ${fnId(Tick)} 1s`);
+  $("say this line is copied verbatim");
+  $("$tp @s $(x) $(y) $(z)");               // macro line
+  $`schedule function ${Tick} 1s`;           // template literal: functions become their ids
+  $(`schedule function ${fnId(Tick)} 1s`);   // the same, with fnId
+  $(Helper);                                 // function mypack:main/helper
 }
 ```
 
-`fnId(fn)` returns a function's id, emitting the function if it hasn't been yet.
+A template literal passed straight to `$` (no parentheses) interpolates functions as their ids. In
+a plain string, use `fnId(fn)`, which returns a function's id and emits the function.
 
 ## NBT values
 
@@ -74,9 +78,9 @@ Plain objects, arrays, strings, numbers and booleans become SNBT. For typed numb
 use `nbt`:
 
 ```ts
-import { nbt, Summon } from "#mc";
+import { $, nbt } from "#mc";
 
-Summon("pig", "~ ~ ~", { NoAI: nbt.byte(1), Health: nbt.float(5), UUID: nbt.intArray([1, 2, 3, 4]) });
+$.Summon("pig", "~ ~ ~", { NoAI: nbt.byte(1), Health: nbt.float(5), UUID: nbt.intArray([1, 2, 3, 4]) });
 // summon pig ~ ~ ~ {NoAI:1b,Health:5f,UUID:[I;1,2,3,4]}
 ```
 

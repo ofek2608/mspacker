@@ -1,8 +1,8 @@
 // @requires schedule function
-import { Schedule } from "#mc";
+import { $ } from "#mc";
 import { Helper } from "./base.js";
 
 /** @mcfunction */
 export function Scheduled() {
-  Schedule("function", Helper, "1s");
+  $.Schedule.Function(Helper, "1s");
 }

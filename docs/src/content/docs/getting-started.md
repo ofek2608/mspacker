@@ -60,7 +60,8 @@ npm run build   # build the data pack into dist/<name>
 npm run dev     # rebuild into a dev server on every save and /reload it
 ```
 
-Your code imports commands from `#mc`, a package import that points at the generated library.
+Your code imports `$` from `#mc`, a package import that points at the generated library. Every
+command hangs off it: `$.Say("hi")`, `$.Execute.As("@a").Run.Say("hi")`. See [commands](/guides/commands/).
 Run `gen` again whenever you change `version`.
 
 ## Your first function
@@ -68,16 +69,16 @@ Run `gen` again whenever you change `version`.
 `src/main.ts` from the template:
 
 ```ts
-import { Say, Tellraw, Execute } from "#mc";
+import { $ } from "#mc";
 
 /** @load */
 export function Init() {
-  Say("Datapack loaded!");
+  $.Say("Datapack loaded!");
 }
 
 /** @mcfunction */
 export function Greet() {
-  Execute().As("@a").At("@s").Run(() => Tellraw("@s", { text: "Hello!", color: "gold" }));
+  $.Execute.As("@a").At("@s").Run.Tellraw("@s", { text: "Hello!", color: "gold" });
 }
 ```
 

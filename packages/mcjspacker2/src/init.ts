@@ -81,16 +81,16 @@ export default defineConfig({
 
   write(
     "src/main.ts",
-    `import { Say, Tellraw, Execute } from "#mc";
+    `import { $ } from "#mc";
 
 /** @load */
 export function Init() {
-  Say("Datapack loaded!");
+  $.Say("Datapack loaded!");
 }
 
 /** @mcfunction */
 export function Greet() {
-  Execute().As("@a").At("@s").Run(() => Tellraw("@s", { text: "Hello!", color: "gold" }));
+  $.Execute.As("@a").At("@s").Run.Tellraw("@s", { text: "Hello!", color: "gold" });
 }
 `,
   );

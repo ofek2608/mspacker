@@ -4,17 +4,12 @@
  * Lowercase helpers avoid clashing with generated PascalCase commands (`Tag` is the `/tag` command,
  * `tag` registers a datapack tag).
  */
-import { addResource, addTag, emitLine, functionRef } from "./state.js";
+import { addResource, addTag, functionRef } from "./state.js";
 import type { FnRef } from "./types.js";
 
 export * from "./types.js";
 export { nbt, snbt } from "./nbt.js";
-export { Chain, bindTree, command, registerChain, type BoundTree, type TreeNode } from "./command.js";
-
-/** Emit a raw command line into the current function. */
-export function raw(line: string): void {
-  emitLine(line);
-}
+export { createRoot, literalName, type TreeNode } from "./command.js";
 
 /**
  * Add entries to a datapack tag, e.g. `tag("function", "minecraft:load", [Init])`.

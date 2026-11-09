@@ -4,7 +4,7 @@
  * parser's serialization is accepted by that version.
  */
 import { findChainTargets, isRootRedirect, resolvePath, type TreeNode } from "../runtime/command.js";
-import { parserDef, RUN_TARGET } from "../runtime/parsers.js";
+import { parserDef } from "../runtime/parsers.js";
 import { compactTree, parserContext, type Registries } from "./generate.js";
 
 export interface Probe {
@@ -38,6 +38,9 @@ function needsHighPermission(name: string, raw: RawNode | undefined): boolean {
 
 /** Data pack format where loot conditions/functions switched to a "type" key (26.3 = 121; 26.2 = 107 still used the old keys). */
 const FORMAT_TYPE_KEYS = 121;
+
+/** The command after `run` in probe lines. */
+const RUN_COMMAND = "say probe";
 
 type Slot = { parser: string; props: Record<string, unknown> | undefined; run?: true };
 type Token = string | Slot;
@@ -101,7 +104,7 @@ export function buildProbes(commandsJson: unknown, registries: Registries, meta:
     tokens
       .map((t, i) => {
         if (typeof t === "string") return t;
-        if (t.run) return RUN_TARGET.examples!(undefined, ctx)[0] as string;
+        if (t.run) return RUN_COMMAND;
         return parserDef(t.parser).serialize(pick(t, i), t.props, ctx);
       })
       .join(" ");

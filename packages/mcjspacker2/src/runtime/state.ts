@@ -20,10 +20,15 @@ export interface FnMeta {
   tick?: boolean;
 }
 
+/** A command line whose text is known when its function ends (commands are built step by step). */
 export interface CommandEntry {
-  parts: string[];
-  complete: boolean;
   head: string;
+  /** The final text, or null if the command is incomplete. */
+  resolve: () => string | null;
+  /** The text so far, for errors. */
+  describe: () => string;
+  /** Where the command was started, for errors. */
+  origin: Error;
 }
 
 type BufferItem = string | CommandEntry;
@@ -123,10 +128,11 @@ function currentBuffer(head: string): BufferItem[] {
   return buf;
 }
 
-/** Start a new command line in the current function. Generated code fills in `parts`. */
-export function beginCommand(head: string): CommandEntry {
-  const entry: CommandEntry = { parts: [head], complete: false, head };
-  currentBuffer(head).push(entry);
+/** Start a new command line in the current function; its text is resolved when the function ends. */
+export function beginCommand(head: string, resolve: () => string | null, describe: () => string): CommandEntry {
+  const buffer = currentBuffer(head);
+  const entry: CommandEntry = { head, resolve, describe, origin: new Error() };
+  buffer.push(entry);
   return entry;
 }
 
@@ -138,10 +144,14 @@ export function emitLine(line: string): void {
 function finalize(items: BufferItem[], where: string): string[] {
   return items.map((item) => {
     if (typeof item === "string") return item;
-    if (!item.complete) {
-      throw new Error(`Incomplete command "${item.parts.join(" ")}" in ${where}. Continue the chain (e.g. .Run(...)).`);
+    const text = item.resolve();
+    if (text === null) {
+      const e = new Error(`Incomplete command "${item.describe()}" in ${where}. Continue it, e.g. with .Run.Say(...).`);
+      // Point at the line that started the command, not at the end of the function.
+      e.stack = `${e.name}: ${e.message}\n${item.origin.stack?.split("\n").slice(1).join("\n") ?? ""}`;
+      throw e;
     }
-    return item.parts.join(" ");
+    return text;
   });
 }
 

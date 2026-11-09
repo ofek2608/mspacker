@@ -1,28 +1,12 @@
 import { readFileSync } from "node:fs";
 import { beforeEach, describe, expect, it } from "vitest";
 import { compactTree } from "../src/codegen/generate.js";
-import { bindTree, Chain, command, registerChain } from "../src/runtime/command.js";
-import { fnId, raw, resource, tag } from "../src/runtime/index.js";
+import { createRoot, literalName } from "../src/runtime/command.js";
+import { fnId, resource, tag } from "../src/runtime/index.js";
 import { parseNamespace } from "../src/runtime/naming.js";
 import { collectOutput, resetState, type FnMeta } from "../src/runtime/state.js";
 
-const T = bindTree(compactTree(JSON.parse(readFileSync(new URL("./fixtures/commands.json", import.meta.url), "utf8"))));
-const c = (lit: string) => (...args: unknown[]) => command(T, lit, args);
-const Say = c("say");
-const Tp = c("tp");
-const Execute = c("execute");
-
-// Minimal stand-in for the generated ExecuteChain.
-class ExecuteChain extends Chain {
-  As(...a: unknown[]): any { return this.$c("as", a); }
-  At(...a: unknown[]): any { return this.$c("at", a); }
-  If(...a: unknown[]): any { return this.$c("if", a); }
-  Run(...a: unknown[]): any { return this.$c("run", a); }
-}
-registerChain("execute", ExecuteChain);
-const Function = c("function");
-const Return = c("return");
-const Tellraw = c("tellraw");
+const $ = createRoot(compactTree(JSON.parse(readFileSync(new URL("./fixtures/commands.json", import.meta.url), "utf8")))) as any;
 
 const meta = (fn: Function, m: FnMeta) => (globalThis as any)[Symbol.for("mcjspacker2.meta")](fn, m);
 
@@ -37,11 +21,11 @@ beforeEach(() => {
 describe("commands", () => {
   it("serializes overloads by argument types", () => {
     function Main() {
-      Tp("@a", "0 ~1 ~");
-      Tp("@a", "^ ^1 ^-2");
-      Tp("@s", "@p");
-      Tp("1 2 3");
-      Tellraw("@a", { text: "hi", color: "red" });
+      $.Tp("@a", "0 ~1 ~");
+      $.Tp("@a", "^ ^1 ^-2");
+      $.Tp("@s", "@p");
+      $.Tp("1 2 3");
+      $.Tellraw("@a", { text: "hi", color: "red" });
     }
     meta(Main, { file: "main.ts", name: "Main", mcfunction: true });
     expect(build()["data/pk/function/gen/main/main.mcfunction"]).toBe(
@@ -51,32 +35,32 @@ describe("commands", () => {
 
   it("throws on bad arguments", () => {
     function Main() {
-      Tp("@a", "0 1");
+      $.Tp("@a", "0 1");
     }
     meta(Main, { file: "main.ts", name: "Main", mcfunction: true });
-    expect(() => build()).toThrow(/No overload of "tp"/);
+    expect(() => build()).toThrow(/No syntax of "tp" matches arguments \("@a", "0 1"\)/);
   });
 
   it("rejects mixed local and world coordinates", () => {
     function Main() {
-      Tp("@a", "0 ~10 ^");
+      $.Tp("@a", "0 ~10 ^");
     }
     meta(Main, { file: "main.ts", name: "Main", mcfunction: true });
     expect(() => build()).toThrow(/Cannot mix local coordinates and world coordinates together: "0 ~10 \^"/);
   });
 
   it("errors when a command runs outside a function", () => {
-    expect(() => Say("x")).toThrow(/outside of an mcfunction/);
+    expect(() => $.Say("x")).toThrow(/outside of an mcfunction/);
   });
 });
 
 describe("execute chains", () => {
   it("inlines single-command callbacks and outlines multi-command ones", () => {
     function Main() {
-      Execute().As("@a").At("@s").Run(() => Say("one"));
-      Execute().If("entity", "@p").Run(() => {
-        Say("a");
-        Say("b");
+      $.Execute.As("@a").At("@s").Run(() => $.Say("one"));
+      $.Execute.If.Entity("@p").Run(() => {
+        $.Say("a");
+        $.Say("b");
       });
     }
     meta(Main, { file: "main.ts", name: "Main", mcfunction: true });
@@ -90,7 +74,7 @@ describe("execute chains", () => {
 
   it("allows conditions as complete commands", () => {
     function Main() {
-      Execute().If("entity", "@p");
+      $.Execute.If.Entity("@p");
     }
     meta(Main, { file: "main.ts", name: "Main", mcfunction: true });
     expect(build()["data/pk/function/gen/main/main.mcfunction"]).toBe("execute if entity @p\n");
@@ -98,7 +82,7 @@ describe("execute chains", () => {
 
   it("rejects incomplete chains", () => {
     function Main() {
-      Execute().As("@a");
+      $.Execute.As("@a");
     }
     meta(Main, { file: "main.ts", name: "Main", mcfunction: true });
     expect(() => build()).toThrow(/Incomplete command "execute as @a"/);
@@ -106,7 +90,7 @@ describe("execute chains", () => {
 
   it("supports return run", () => {
     function Main() {
-      Return("run", () => Say("x"));
+      $.Return.Run(() => $.Say("x"));
     }
     meta(Main, { file: "main.ts", name: "Main", mcfunction: true });
     expect(build()["data/pk/function/gen/main/main.mcfunction"]).toBe("return run say x\n");
@@ -116,15 +100,15 @@ describe("execute chains", () => {
 describe("function references", () => {
   it("emits referenced helpers lazily and handles recursion", () => {
     function Helper() {
-      Say("helper");
+      $.Say("helper");
     }
     function Loop() {
-      Function(Loop);
+      $.Function(Loop);
     }
     function Main() {
-      Function(Helper);
-      Function(Loop);
-      Function("minecraft:other");
+      $.Function(Helper);
+      $.Function(Loop);
+      $.Function("minecraft:other");
     }
     meta(Helper, { file: "a/b.ts", name: "Helper" });
     meta(Loop, { file: "a/b.ts", name: "Loop" });
@@ -138,7 +122,7 @@ describe("function references", () => {
 
   it("does not emit unreferenced, untagged functions", () => {
     function Unused() {
-      Say("x");
+      $.Say("x");
     }
     meta(Unused, { file: "main.ts", name: "Unused" });
     expect(Object.keys(build())).toEqual([]);
@@ -147,11 +131,11 @@ describe("function references", () => {
   it("dedupes identical anonymous functions", () => {
     function Main() {
       const make = () => () => {
-        Say("1");
-        Say("2");
+        $.Say("1");
+        $.Say("2");
       };
-      Function(make());
-      Function(make());
+      $.Function(make());
+      $.Function(make());
     }
     meta(Main, { file: "main.ts", name: "Main", mcfunction: true });
     const files = build();
@@ -170,8 +154,8 @@ describe("function references", () => {
 
   it("supports overrides, load/tick tags and raw", () => {
     function Init() {
-      raw("say raw");
-      raw(`function ${fnId(Init)}`);
+      $("say raw");
+      $(`function ${fnId(Init)}`);
     }
     meta(Init, { file: "main.ts", name: "Init", mcfunction: "boot", load: true });
     tag("function", "pk:all", [Init, "pk:x"]);
@@ -183,7 +167,7 @@ describe("function references", () => {
 
   it("uses plural folder names before pack format 45", () => {
     function Init() {
-      Say("x");
+      $.Say("x");
     }
     meta(Init, { file: "main.ts", name: "Init", load: true });
     tag("block", "pk:stuff", ["stone"]);
@@ -201,14 +185,14 @@ describe("queued recording", () => {
     const fns: Function[] = [];
     for (let i = 0; i < 20_000; i++) {
       const f = () => {
-        Say(`n${i}`);
-        if (i + 1 < 20_000) Function(fns[i + 1]);
+        $.Say(`n${i}`);
+        if (i + 1 < 20_000) $.Function(fns[i + 1]);
       };
       meta(f, { file: "chain.ts", name: `F${i}` });
       fns.push(f);
     }
     function Main() {
-      Function(fns[0]);
+      $.Function(fns[0]);
     }
     meta(Main, { file: "main.ts", name: "Main", mcfunction: true });
     const files = build();
@@ -220,12 +204,12 @@ describe("queued recording", () => {
     const fns: Function[] = [];
     for (let i = 0; i < 5_000; i++) {
       fns.push(() => {
-        Say(`a${i}`);
-        if (i + 1 < 5_000) Function(fns[i + 1]);
+        $.Say(`a${i}`);
+        if (i + 1 < 5_000) $.Function(fns[i + 1]);
       });
     }
     function Main() {
-      Function(fns[0]);
+      $.Function(fns[0]);
     }
     meta(Main, { file: "main.ts", name: "Main", mcfunction: true });
     const files = build();
@@ -237,9 +221,9 @@ describe("queued recording", () => {
     function Main() {
       let wave = 0;
       for (; wave < 2; wave++) {
-        Execute().As("@a").Run(() => {
-          Say(`wave ${wave}`);
-          Say("x");
+        $.Execute.As("@a").Run(() => {
+          $.Say(`wave ${wave}`);
+          $.Say("x");
         });
       }
     }
@@ -251,11 +235,11 @@ describe("queued recording", () => {
 
   it("resolves anonymous ids in raw lines, tags and resources", () => {
     const anon = () => {
-      Say("a");
-      Say("b");
+      $.Say("a");
+      $.Say("b");
     };
     function Main() {
-      raw(`schedule function ${fnId(anon)} 1s`);
+      $(`schedule function ${fnId(anon)} 1s`);
       tag("function", "pk:t", [fnId(anon)]);
       resource("advancement", "pk:adv", { rewards: { function: fnId(anon) } });
     }
@@ -270,7 +254,7 @@ describe("queued recording", () => {
 
   it("records functions referenced by tags added while recording", () => {
     function Late() {
-      Say("late");
+      $.Say("late");
     }
     meta(Late, { file: "main.ts", name: "Late" });
     function Main() {
@@ -283,22 +267,114 @@ describe("queued recording", () => {
   it("gives anonymous functions in a reference cycle position-based ids", () => {
     const fns: Function[] = [];
     fns[0] = () => {
-      Say("ping");
-      Function(fns[1]);
+      $.Say("ping");
+      $.Function(fns[1]);
     };
     fns[1] = () => {
-      Say("pong");
-      Function(fns[0]);
+      $.Say("pong");
+      $.Function(fns[0]);
     };
     meta(fns[0]!, { file: "main.ts", line: 1 });
     meta(fns[1]!, { file: "main.ts", line: 5 });
     function Main() {
-      Function(fns[0]);
+      $.Function(fns[0]);
     }
     meta(Main, { file: "main.ts", name: "Main", mcfunction: true });
     const files = build();
     const anon = Object.entries(files).filter(([f]) => f.includes("__anon"));
     expect(anon).toHaveLength(2);
     for (const [, body] of anon) expect(body).toMatch(/^say p[io]ng\nfunction pk:gen\/main\/__anon\/p?[0-9a-f]{8}\n$/);
+  });
+});
+
+describe("$ proxy", () => {
+  const main = (body: () => void) => {
+    meta(body, { file: "main.ts", name: "Main", mcfunction: true });
+    return build()["data/pk/function/gen/main/main.mcfunction"];
+  };
+
+  it("accepts arguments in one call or split across calls", () => {
+    expect(
+      main(function Main() {
+        $.Tp("@a", "1 2 3");
+        $.Tp("@a")("1 2 3");
+        $.Tp("@a")("1 2 3")("90 0");
+        $.Tp("@a")("@p"); // sibling args <targets> / <destination> stay open until the next value
+        $.Scoreboard.Players.Set("@s", "kills", 0);
+      }),
+    ).toBe("tp @a 1 2 3\ntp @a 1 2 3\ntp @a 1 2 3 90 0\ntp @a @p\nscoreboard players set @s kills 0\n");
+  });
+
+  it("follows redirects: Run lands on the root, subcommands chain", () => {
+    expect(
+      main(function Main() {
+        $.Execute.As("@a").At("@s").If.Entity("@p").Run.Say("hi");
+        $.Execute.If.Score("@s", "a")["<"]("@s", "b").Run.Say("lt");
+        $.Execute.As("@a").Run("say raw");
+        $.Execute.As("@a").Run.Execute.At("@s").Run.Say("nested");
+      }),
+    ).toBe(
+      "execute as @a at @s if entity @p run say hi\n" +
+        "execute if score @s a < @s b run say lt\n" +
+        "execute as @a run say raw\n" +
+        "execute as @a run execute at @s run say nested\n",
+    );
+  });
+
+  it("emits raw lines, templates and functions from the root", () => {
+    function Helper() {
+      $.Say("a");
+      $.Say("b");
+    }
+    meta(Helper, { file: "main.ts", name: "Helper" });
+    expect(
+      main(function Main() {
+        $("$say $(message)");
+        $`schedule function ${Helper} 1s`;
+        $(Helper);
+        $(() => $.Say("inline"));
+      }),
+    ).toBe("$say $(message)\nschedule function pk:gen/main/helper 1s\nfunction pk:gen/main/helper\nsay inline\n");
+  });
+
+  it("starts a new line when a stored prefix is reused", () => {
+    expect(
+      main(function Main() {
+        const atAll = $.Execute.As("@a").At("@s");
+        atAll.Run.Say("1");
+        atAll.Run.Say("2");
+      }),
+    ).toBe("execute as @a at @s run say 1\nexecute as @a at @s run say 2\n");
+  });
+
+  it("reports incomplete commands at the line that started them", () => {
+    function Main() {
+      $.Say("ok");
+      $.Execute.As("@a").At("@s");
+    }
+    meta(Main, { file: "main.ts", name: "Main", mcfunction: true });
+    let err: Error | undefined;
+    try {
+      build();
+    } catch (e) {
+      err = e as Error;
+    }
+    expect(err?.message).toMatch(/Incomplete command "execute as @a at @s"/);
+    expect(err?.stack).toMatch(/runtime\.test\.ts:\d+/);
+  });
+
+  it("rejects unknown literals with the command so far", () => {
+    function Main() {
+      $.Execute.As("@a").Sideways;
+    }
+    meta(Main, { file: "main.ts", name: "Main", mcfunction: true });
+    expect(() => build()).toThrow(/Unknown subcommand "Sideways" after "execute as @a"/);
+  });
+
+  it("names literals in PascalCase across gamerule spellings", () => {
+    expect(literalName("keepInventory")).toBe("KeepInventory");
+    expect(literalName("minecraft:keep_inventory")).toBe("KeepInventory");
+    expect(literalName("ban-ip")).toBe("BanIp");
+    expect(literalName("<")).toBeNull();
   });
 });

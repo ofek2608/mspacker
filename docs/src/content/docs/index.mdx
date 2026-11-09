@@ -16,25 +16,25 @@ hero:
 import { Card, CardGrid } from "@astrojs/starlight/components";
 
 ```ts
-import { Execute, Function, Say, Tellraw, Tp } from "#mc";
+import { $ } from "#mc";
 
 /** @mcfunction */
 export function StartRound() {
-  Tp("@a", "0 ~10 0");
-  Tellraw("@a", { text: "Fight!", color: "red" });
-  Execute().As("@a").At("@s").Run(() => Say("go!"));
-  Function(Cleanup);
+  $.Tp("@a", "0 ~10 0");
+  $.Tellraw("@a", { text: "Fight!", color: "red" });
+  $.Execute.As("@a").At("@s").Run.Say("go!");
+  $.Function(Cleanup);
 }
 
 function Cleanup() {
-  Say("cleaning up");
+  $.Say("cleaning up");
 }
 ```
 
 <CardGrid>
   <Card title="Generated from the game" icon="seti:json">
-    `mcjs2 gen` runs Minecraft's datagen and turns its command tree into typed functions, so the
-    library always matches your version, snapshots and April Fools versions included.
+    `mcjs2 gen` runs Minecraft's datagen and turns its command tree into `$`, typed node by node,
+    so it always matches your version, snapshots and April Fools versions included.
   </Card>
   <Card title="Functions are files" icon="document">
     Each TypeScript function becomes an `.mcfunction`, named after its file and function name.

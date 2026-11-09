@@ -4,17 +4,22 @@ Write Minecraft datapacks in TypeScript. The command library is generated from t
 datagen reports, so every command, argument, and registry id is typed for the exact version you target.
 
 ```ts
-import { Tp, Execute, Function, Say } from "#mc";
+import { $ } from "#mc";
 
 /** @mcfunction */
 export function StartRound() {
-  Tp("@a", "0 ~10 0");
-  Execute().As("@a").At("@s").Run(() => Say("go!"));
-  Function(Helper);
+  $.Tp("@a", "0 ~10 0");
+  $.Execute.As("@a").At("@s").Run.Say("go!");
+  $.Scoreboard.Players.Set("@s", "kills", 0);
+  $.Function(Helper);
 }
 
-function Helper() { Say("helper"); }   // emitted because StartRound references it
+function Helper() { $.Say("helper"); }   // emitted because StartRound references it
 ```
+
+Commands are a chain on `$`: literal words are properties (`$.Scoreboard.Players`), arguments are
+calls (`Set("@s", "kills", 0)`, or split: `Set("@s")("kills", 0)`). `Run` leads back to `$`. Each `$.`
+starts a line, which must be a complete command when the function ends.
 
 Full documentation: the Starlight site in [`docs/`](../../docs) (`pnpm docs` from the repo root).
 
@@ -31,7 +36,7 @@ The version list has the latest release and snapshot, the latest patch of every 
 every 1.21 game drop, and the April Fools versions at the bottom. **Other version…** searches every version
 with data packs. Non-interactive: `npm create mcjspacker2@latest my-pack -- --version 26.3 --namespace mypack --yes`.
 
-**Positions** are strings, as in game: `Tp("@s", "~ ~1 ~")`, `Setblock("0 64 0", "stone")`.
+**Positions** are strings, as in game: `$.Tp("@s", "~ ~1 ~")`, `$.Setblock("0 64 0", "stone")`.
 
 **Server jar.** If the server dir contains a jar, it is used as-is. The server dir is
 `server.dir` in the config, the `MCJS2_SERVER_DIR` env var, or `<project>/server` by default.
@@ -69,7 +74,7 @@ export default defineConfig({
 ## How functions map to files
 
 - **Entry points.** JSDoc `@mcfunction` makes a function an entry point. `@load` / `@tick` also add it to `#minecraft:load` / `#minecraft:tick`.
-- **Other functions.** Functions without a tag are emitted only when referenced (`Function(fn)`, `.Run(fn)`, `fnId(fn)`, `tag(...)`).
+- **Other functions.** Functions without a tag are emitted only when referenced (`$.Function(fn)`, `.Run(fn)`, `$(fn)`, `fnId(fn)`, `tag(...)`).
 - **Ids.** The id is `<namespace>:<prefix><file path>/<function name>`. Every path segment is converted by inserting `_` before each capital letter except the first, then lowercasing. For example, `src/combat/Arena.ts` → `function StartRound` gives `mypack:generated/combat/arena/start_round`.
 - **Overrides.** `/** @mcfunction other:path */` is absolute. `/** @mcfunction path */` is relative to the namespace prefix.
 - **Anonymous functions.** Arrows and names that can't be parsed get `…/<file>/__anon/<hash of body>`. The name is deterministic, and identical bodies are shared.
@@ -80,13 +85,12 @@ export default defineConfig({
 Your TypeScript runs **at build time**. Each command call appends one line to the function being recorded. As a result:
 
 - `if`/`for`/variables are compile-time: a loop unrolls into repeated commands.
-- Calling a helper directly (`Helper()`) inlines its commands. Use `Function(Helper)` to emit a `function` call instead.
+- Calling a helper directly (`Helper()`) inlines its commands. Use `$.Function(Helper)` to emit a `function` call instead.
 - Calling a command at module top level is an error. Commands must run inside a function.
-- The generated `Function` export shadows the global JS `Function` constructor in files that import it.
 
 ## Escape hatches
 
-- `raw("any command")` emits a line verbatim. Use `fnId(fn)` to put a function's id into it: ``raw(`schedule function ${fnId(Tick)} 1s`)``.
+- `$("any command")` emits a line verbatim, e.g. macro lines `$("$say $(message)")`. As a tagged template, functions become their ids: ``$`schedule function ${Tick} 1s` ``. `fnId(fn)` gives an id for plain strings.
 - `tag("function", "minecraft:load", [Init, "other:fn"])` and `resource("advancement", "mypack:root", {...})` add tags and JSON resources.
 - `nbt.byte(1)`, `nbt.intArray([...])`, `nbt.raw("...")` give typed SNBT values.
 - Everything in `datapack/` (the `raw` dir) is copied into the pack verbatim. When a tag JSON file exists both there and in the generated output, the two are merged.
@@ -96,7 +100,7 @@ Your TypeScript runs **at build time**. Each command call appends one line to th
 Every command argument names a brigadier parser (`minecraft:vec3`, `minecraft:component`, …).
 `src/runtime/parsers.ts` maps each parser to:
 - `type`: the TS type in generated signatures
-- `test`: a runtime check used to pick between overloads
+- `test`: a runtime check used to pick between syntaxes (`tp <targets>` vs `tp <location>`)
 - `serialize`: how a value becomes command text
 - `examples`: sample values used by the version probe (see below)
 

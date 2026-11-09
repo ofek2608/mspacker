@@ -172,7 +172,7 @@ matrix.each(VERSIONS)("Minecraft %s", (version) => {
     for (const [name, content] of Object.entries(result.files)) writeFileSync(join(genDir, name), content);
     const meta: GenMeta = { version, packFormat: dataPackFormat(jarVersion) };
     writeFileSync(join(genDir, "meta.json"), JSON.stringify(meta));
-    log(`${result.stats.commands} commands, ${result.stats.overloads} overloads, pack format ${meta.packFormat.join(".")}`);
+    log(`${result.stats.commands} commands, ${result.stats.nodes} node types, pack format ${meta.packFormat.join(".")}`);
     for (const w of result.warnings) log(`codegen warning: ${w}`);
 
     // 3. type-check generated library + sample
@@ -258,6 +258,8 @@ matrix.each(VERSIONS)("Minecraft %s", (version) => {
           .split("\n")
           .filter((l) => (/(Failed to load|Couldn't load) function/i.test(l) && /matrix[:/\\]/.test(l)) || PACK_ERRORS.test(l));
         expect(errors, `pack load errors on ${version}`).toEqual([]);
+        // Some versions (3D Shareware) start RCON before the load functions have run.
+        await waitFor(child, /mcjs2-load-ok/, 30_000, output).catch(() => {});
         expect(output.text, "@load function ran").toContain("mcjs2-load-ok");
         for (const [fn, res] of Object.entries(results)) {
           expect(res, `${fn} on ${version}`).not.toMatch(/Unknown function|Unknown or incomplete|Can't find|error/i);

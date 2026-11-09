@@ -1,7 +1,7 @@
 // @requires data merge storage
-import { Data } from "#mc";
+import { $ } from "#mc";
 
 /** @mcfunction */
 export function Storage() {
-  Data("merge", "storage", "mcjs2:test", { value: 1, list: [1, 2, 3], name: "x" });
+  $.Data.Merge.Storage("mcjs2:test", { value: 1, list: [1, 2, 3], name: "x" });
 }

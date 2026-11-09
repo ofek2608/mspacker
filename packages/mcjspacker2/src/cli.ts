@@ -26,7 +26,7 @@ cli
     const cfg = await loadConfig(o.cwd);
     const r = await generateLibrary(cfg, { force: o.force, log });
     for (const w of r.warnings) log(`warning: ${w}`);
-    log(`Generated ${r.stats.commands} commands (${r.stats.overloads} overloads, ${r.stats.chains} chain builders) -> ${cfg.genDir}`);
+    log(`Generated ${r.stats.commands} commands (${r.stats.nodes} node types) -> ${cfg.genDir}`);
   });
 
 cli

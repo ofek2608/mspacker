@@ -3,7 +3,7 @@
  *
  * One entry per brigadier parser id found in commands.json. Each entry defines:
  *   - type:      the TS type expression used in generated signatures
- *   - test:      runtime check used to pick between overloads
+ *   - test:      runtime check used to pick between sibling arguments
  *   - serialize: how a value becomes command text
  *   - examples:  sample values; the version matrix "probe" turns every command path into a test
  *                command built from these and checks the real server accepts it
@@ -15,7 +15,7 @@
  * Unknown parsers fall back to `string`.
  */
 import { snbt, quoteString, type NbtValue } from "./nbt.js";
-import { functionRef, runTarget } from "./state.js";
+import { functionRef } from "./state.js";
 
 export type Props = Record<string, unknown> | undefined;
 
@@ -75,7 +75,7 @@ function splitCoords(v: unknown, n: number): string[] | null {
 }
 
 /**
- * Selectors, player names and UUIDs. Rejects strings that look like coordinates (`"~ ~1 ~"`), so overloads such
+ * Selectors, player names and UUIDs. Rejects strings that look like coordinates (`"~ ~1 ~"`), so sibling arguments such
  * as `tp <targets> <destination>` vs `tp <targets> <location>` resolve by content.
  */
 const target = (type: string, examples: unknown[] = ["@s"]): ParserDef => ({
@@ -387,11 +387,3 @@ export function parserDef(id: string): ParserDef {
 export function isKnownParser(id: string): boolean {
   return id in PARSERS || !!(globalThis as G)[OVERRIDES]?.[id];
 }
-
-/** Pseudo-parser for the argument after a root-redirecting literal like `execute run` / `return run`. */
-export const RUN_TARGET: ParserDef = {
-  type: () => "RunTarget",
-  test: (v) => isStr(v) || typeof v === "function",
-  serialize: (v) => runTarget(v),
-  examples: () => ["say probe"],
-};

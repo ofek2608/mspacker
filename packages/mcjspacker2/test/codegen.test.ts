@@ -10,25 +10,25 @@ const result = generate(fixture("commands.json"), fixture("registries.json"), { 
 const commands = result.files["commands.ts"]!;
 
 describe("generate", () => {
-  it("emits one function per root command", () => {
+  it("types $ with one interface per node: literals are properties, arguments are calls", () => {
     expect(result.stats.commands).toBe(13);
-    expect(commands).toContain("export function Tp(location: Vec3): void;");
-    expect(commands).toContain("export function Say(message: string): void;");
+    expect(commands).toContain("export const $ = createRoot(tree) as Commands;");
+    expect(commands).toMatch(/\/\*\* `tp` \*\/\n  readonly Tp: N\d+;/);
+    expect(commands).toMatch(/\(targets: Selector, location: Vec3, rotation: Rotation\): N\d+;/);
   });
 
-  it("folds prefix overloads into optional params", () => {
-    expect(commands).toContain("export function Tp(targets: Selector, location?: Vec3, rotation?: Rotation): void;");
+  it("merges sibling arguments of the same type", () => {
+    expect(commands).toContain("/** `tp <destination>` or `tp <targets>` */");
+    expect(commands).toMatch(/\(destination: Selector\): N\d+ & N\d+;/);
   });
 
-  it("builds a chain class for execute", () => {
-    expect(result.stats.chains).toBe(1);
-    expect(commands).toContain("export class ExecuteChain extends Chain");
-    expect(commands).toContain("  Run(command: RunTarget): void;");
-    expect(commands).toContain("export function Execute(): ExecuteChain;");
+  it("uses the target's type for redirects", () => {
+    expect(commands).toMatch(/\/\*\* `execute run` \*\/\n  readonly Run: Commands;/);
+    expect(commands).toContain('readonly "<": ');
   });
 
   it("uses registry id unions", () => {
-    expect(commands).toMatch(/Setblock\(pos: BlockPos, block: Id<"block">/);
+    expect(commands).toContain('(pos: BlockPos, block: Id<"block">)');
     expect(result.files["registries.ts"]).toContain('"block": ');
   });
 
@@ -46,21 +46,31 @@ describe("generate", () => {
       for (const [name, content] of Object.entries(result.files)) writeFileSync(join(gen, name), content);
       writeFileSync(
         join(dir, "use.ts"),
-        `import { Tp, Execute, Say, Function, Setblock, Effect } from "./gen/index.js";
+        `import { $ } from "./gen/index.js";
 export function Main() {
-  Tp("@a", "0 ~1 ~2");
-  Tp("@a", "^ ^1 ^2");
-  Execute().As("@a").If("entity", "@s").Run(() => Say("x"));
-  Function(Main);
-  Setblock("0 0 0", "stone");
-  Effect("give", "@s", "minecraft:speed", 10);
+  $.Tp("@a", "0 ~1 ~2");
+  $.Tp("@a")("^ ^1 ^2");
+  $.Tp("@a")("@p");
+  $.Execute.As("@a").If.Entity("@s").Run.Say("x");
+  $.Execute.As("@a").Run(() => $.Say("x"));
+  $.Execute.If.Score("@s", "a")["<"]("@s", "b").Run("say raw");
+  $.Function(Main);
+  $.Setblock("0 0 0", "stone");
+  $.Effect.Give("@s", "minecraft:speed", 10);
+  $.Scoreboard.Players.Set("@s", "kills", 0);
+  $("$say $(message)");
+  $\`function \${Main}\`;
 }
 // @ts-expect-error wrong arity for a position
-Setblock("0 1", "stone");
+$.Setblock("0 1", "stone");
 // @ts-expect-error local and world coordinates can't mix
-Setblock("0 ~1 ^", "stone");
+$.Setblock("0 ~1 ^", "stone");
 // @ts-expect-error positions are strings, not arrays
-Setblock([0, 1, 2], "stone");
+$.Setblock([0, 1, 2], "stone");
+// @ts-expect-error unknown subcommand
+$.Execute.Sideways;
+// @ts-expect-error literals are properties, not string arguments
+$.Effect("give", "@s", "speed");
 `,
       );
       writeFileSync(

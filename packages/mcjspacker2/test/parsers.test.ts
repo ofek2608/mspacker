@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it } from "vitest";
 import { compactTree, generate } from "../src/codegen/generate.js";
 import { buildProbes, probeFiles, probeResults } from "../src/codegen/probe.js";
-import { bindTree, command } from "../src/runtime/command.js";
+import { createRoot } from "../src/runtime/command.js";
 import { parseNamespace } from "../src/runtime/naming.js";
 import { FORMAT_BELOW_NAME, parserDef, setParserOverrides } from "../src/runtime/parsers.js";
 import { collectOutput, resetState, type FnMeta } from "../src/runtime/state.js";
@@ -52,7 +52,7 @@ describe("user-defined parsers", () => {
   it("override types in codegen", () => {
     setParserOverrides({ "minecraft:vec3": { type: "MyVec" } });
     const out = generate(commands, registries, { version: "t", packFormat: 108 }).files["commands.ts"]!;
-    expect(out).toContain("export function Tp(location: MyVec): void;");
+    expect(out).toContain("(location: MyVec): N");
   });
 
   it("accept version-dependent type functions and silence unknown-parser warnings", () => {
@@ -61,7 +61,7 @@ describe("user-defined parsers", () => {
     setParserOverrides({ "minecraft:brand_new": { type: (_p, c) => (c.packFormat >= 200 ? "`new:${string}`" : "string") } });
     const r = generate(tree, {}, { version: "t", packFormat: 200 });
     expect(r.warnings).toEqual([]);
-    expect(r.files["commands.ts"]).toContain("export function Foo(v: `new:${string}`): void;");
+    expect(r.files["commands.ts"]).toMatch(/\(v: `new:\$\{string\}`\): N\d+;/);
   });
 
   it("override test/serialize at build time", () => {
@@ -69,9 +69,9 @@ describe("user-defined parsers", () => {
       "minecraft:vec3": { test: (v) => typeof v === "object" && v !== null && "x" in v, serialize: (v: any) => `${v.x} ${v.y} ${v.z}` },
     });
     resetState(parseNamespace("pk"), { version: "t", packFormat: 108 });
-    const T = bindTree(compactTree(commands));
+    const $ = createRoot(compactTree(commands)) as any;
     function Main() {
-      command(T, "tp", [{ x: 1, y: 2, z: 3 }]);
+      $.Tp({ x: 1, y: 2, z: 3 });
     }
     meta(Main, { file: "m.ts", name: "Main", mcfunction: true });
     expect(collectOutput().files.get("data/pk/function/m/main.mcfunction")).toBe("tp 1 2 3\n");

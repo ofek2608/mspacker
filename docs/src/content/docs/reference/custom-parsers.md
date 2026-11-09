@@ -38,7 +38,7 @@ for unknown parsers.
 | Field | Used by | |
 |---|---|---|
 | `type` | `mcjs2 gen` | The TypeScript type in generated signatures, as source text. Can use any type exported from `#mc`. Run `mcjs2 gen` again after changing it. |
-| `test(value, props, ctx)` | build | Whether a value fits this argument. Used to pick between overloads, so keep it as strict as you can. |
+| `test(value, props, ctx)` | build | Whether a value fits this argument. Used to pick between sibling syntaxes (`tp <targets>` vs `tp <location>`), so keep it as strict as you can. |
 | `serialize(value, props, ctx)` | build | The command text for a value. |
 | `examples` | probe | Values the [version probe](/reference/versions/#parser-probe) uses to test this parser on a real server. |
 

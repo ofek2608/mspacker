@@ -1,12 +1,12 @@
 /**
  * commands.json + registries.json -> TypeScript command library.
  *
- * Root literals become PascalCase functions with one overload per command path.
- * Nodes that are redirect targets (e.g. `execute`) become chain builder classes.
+ * Emits `$`, typed with one interface per command tree node: literal children are properties,
+ * runs of argument children are call signatures, and redirects reuse their target's interface.
  */
-import { findChainTargets, isRootRedirect, resolvePath, type TreeNode } from "../runtime/command.js";
-import { camel, pascal } from "../runtime/naming.js";
-import { isKnownParser, parserDef, RUN_TARGET, type ParserContext } from "../runtime/parsers.js";
+import { continuation, literalName, type TreeNode } from "../runtime/command.js";
+import { camel } from "../runtime/naming.js";
+import { isKnownParser, parserDef, type ParserContext } from "../runtime/parsers.js";
 
 interface RawNode {
   type: "root" | "literal" | "argument";
@@ -53,31 +53,19 @@ export function compactTree(raw: RawNode): TreeNode {
 interface Param {
   name: string;
   type: string;
-  optional?: boolean;
 }
-
-interface Sig {
-  params: Param[];
-  ret: string;
-  syntax: string[];
-}
-
-/** Names exported by mcjspacker2/runtime; generated commands must not collide with them. */
-const RUNTIME_EXPORTS = new Set([
-  "WorldCoord", "LocalCoord", "PositionCoord", "Position", "Vec3", "BlockCoord", "BlockPos", "Vec2", "ColumnPos", "RotationCoord", "Rotation",
-  "SelectorBase", "Selector", "ScoreHolder", "Range", "Duration", "TextComponent", "TextComponentObject", "FnRef",
-  "RunTarget", "EntityAnchor", "GameModeId", "Heightmap", "Operation", "TemplateMirror", "TemplateRotation", "Swizzle",
-  "ChatColor", "ScoreboardSlot", "LegacyScoreboardSlot", "LegacyTextComponent", "LegacyTextComponentObject",
-  "Dimension", "NbtCompound", "NbtValue", "Chain", "Id", "RegistryIds",
-]);
-
-const MAX_OVERLOADS = 400;
 
 export interface GenerateResult {
   files: Record<string, string>;
   warnings: string[];
-  stats: { commands: number; overloads: number; chains: number };
+  stats: { commands: number; nodes: number };
 }
+
+/** Parameter types that accept any string. */
+const BROAD_TYPE = /\b(string|Selector|ScoreHolder|Id<|FnRef|Dimension|Swizzle|NbtValue|TextComponent|LegacyTextComponent)\b/;
+
+/** Signatures per node stop after this many consecutive arguments (`f(a, b, c, ...)`). */
+const MAX_ARGS_PER_CALL = 12;
 
 export function generate(
   commandsJson: unknown,
@@ -85,12 +73,9 @@ export function generate(
   meta: { version: string; packFormat: number },
 ): GenerateResult {
   const root = compactTree(commandsJson as RawNode);
-  const chainKey = findChainTargets(root);
   const warnings: string[] = [];
   const unknownParsers = new Set<string>();
   const ctx = parserContext(registries, meta);
-
-  const chainName = (node: TreeNode) => pascal(chainKey.get(node)!.replace(/\//g, "-")) + "Chain";
 
   function argType(node: TreeNode): string {
     const id = node.p ?? "";
@@ -98,66 +83,25 @@ export function generate(
     return parserDef(id).type(node.o, ctx);
   }
 
-  function* walk(node: TreeNode, params: Param[], syntax: string[]): Generator<Sig> {
-    if (node.l && isRootRedirect(node)) {
-      yield { params: [...params, { name: "command", type: RUN_TARGET.type(undefined, ctx) }], ret: "void", syntax: [...syntax, "<command>"] };
-      return;
+  // One interface per node that isn't a redirect. Redirecting nodes use their target's type
+  // (`execute as <targets>` -> the `execute` node, `run` -> the root).
+  const names = new Map<TreeNode, string>([[root, "Commands"]]);
+  const syntaxOf = new Map<TreeNode, string>([[root, ""]]);
+  const pending: TreeNode[] = [root];
+
+  function typeOf(node: TreeNode, syntax: string): string {
+    const target = continuation(root, node);
+    let name = names.get(target);
+    if (!name) {
+      name = `N${names.size}`;
+      names.set(target, name);
+      syntaxOf.set(target, syntax);
+      pending.push(target);
     }
-    if (chainKey.has(node)) {
-      yield { params, ret: chainName(node), syntax };
-      return;
-    }
-    const target = node.r && node.r.length ? resolvePath(root, node.r) : null;
-    if (target && chainKey.has(target)) {
-      yield { params, ret: chainName(target), syntax };
-      return;
-    }
-    if (node.x) yield { params, ret: "void", syntax };
-    const source = target ?? node;
-    // Group sibling literals with identical subtrees into one union-typed parameter.
-    const groups = new Map<string, string[]>();
-    const args: [string, TreeNode][] = [];
-    for (const [name, child] of Object.entries(source.c ?? {})) {
-      if (child.l) {
-        const key = JSON.stringify(child);
-        const list = groups.get(key) ?? [];
-        list.push(name);
-        groups.set(key, list);
-      } else args.push([name, child]);
-    }
-    for (const names of groups.values()) {
-      const child = source.c![names[0]!]!;
-      const type = names.map((n) => JSON.stringify(n)).join(" | ");
-      const name = names.length === 1 ? camel(names[0]!) : "mode";
-      yield* walk(child, [...params, { name, type }], [...syntax, names.join("|")]);
-    }
-    for (const [name, child] of args) {
-      yield* walk(child, [...params, { name: camel(name), type: argType(child) }], [...syntax, `<${name}>`]);
-    }
+    return name;
   }
 
-  function finish(sigs: Sig[]): Sig[] {
-    // Fold prefix overloads into optional trailing params: f(a), f(a, b) -> f(a, b?).
-    const key = (s: Sig, n = s.params.length) => s.params.slice(0, n).map((p) => p.type).join(",") + "->" + s.ret;
-    const byKey = new Map<string, Sig>();
-    for (const s of sigs) if (!byKey.has(key(s))) byKey.set(key(s), s);
-    const unique = [...byKey.values()];
-    const consumed = new Set<Sig>();
-    const sorted = [...unique].sort((a, b) => b.params.length - a.params.length);
-    for (const s of sorted) {
-      if (consumed.has(s)) continue;
-      let k = s.params.length;
-      while (k > 0) {
-        const shorter = byKey.get(key({ ...s, params: s.params.slice(0, k - 1) }));
-        if (!shorter || consumed.has(shorter) || shorter === s) break;
-        consumed.add(shorter);
-        k--;
-      }
-      s.params = s.params.map((p, i) => ({ ...p, optional: i >= k }));
-      if (k < s.params.length) s.syntax = s.syntax.map((t, i) => (i >= k + (s.syntax.length - s.params.length) ? `[${t}]` : t));
-    }
-    return unique.filter((s) => !consumed.has(s));
-  }
+  const join = (a: string, b: string) => (a ? `${a} ${b}` : b);
 
   function renderParams(params: Param[]): string {
     const seen = new Map<string, number>();
@@ -165,61 +109,87 @@ export function generate(
       .map((p) => {
         const n = seen.get(p.name) ?? 0;
         seen.set(p.name, n + 1);
-        const name = n ? `${p.name}${n + 1}` : p.name;
-        return `${safeIdent(name)}${p.optional ? "?" : ""}: ${p.type}`;
+        return `${safeIdent(n ? `${p.name}${n + 1}` : p.name)}: ${p.type}`;
       })
       .join(", ");
   }
 
-  let overloadCount = 0;
-  function renderOverloads(indent: string, decl: string, sigs: Sig[], impl: string, note = ""): string {
-    if (sigs.length > MAX_OVERLOADS) {
-      warnings.push(`${decl}: ${sigs.length} overloads, falling back to an untyped signature.`);
-      sigs = [];
-    }
-    overloadCount += sigs.length;
+  function renderNode(node: TreeNode): string {
+    const syntax = syntaxOf.get(node)!;
     const lines: string[] = [];
-    for (const s of sigs) {
-      lines.push(`${indent}/** \`${s.syntax.join(" ")}\`${note} */`);
-      lines.push(`${indent}${decl}(${renderParams(s.params)}): ${s.ret};`);
-    }
-    lines.push(`${indent}${decl}(...args: unknown[]): any { ${impl} }`);
-    return lines.join("\n");
-  }
 
-  // ---- chain classes
-  const chainOut: string[] = [];
-  const chainNodes = [...chainKey.entries()].sort(([, a], [, b]) => a.localeCompare(b));
-  for (const [node, keyStr] of chainNodes) {
-    const cls = chainName(node);
-    const methods: string[] = [];
-    for (const [lit, child] of Object.entries(node.c ?? {})) {
-      if (!child.l) {
-        warnings.push(`Chain ${keyStr}: argument child <${lit}> is not supported; use raw().`);
-        continue;
+    if (node === root) {
+      lines.push(
+        "  /** A command line as-is: `$(\"say hi\")`, or a macro line: `$(\"$say $(message)\")`. */",
+        "  (command: string): void;",
+        "  /** A command template. Functions interpolate as their ids: `$`function ${Helper}``. */",
+        "  (strings: TemplateStringsArray, ...values: unknown[]): void;",
+        "  /** A function's commands: a single anonymous command is inlined, otherwise `function <id>`. */",
+        "  (fn: (...args: never[]) => unknown): void;",
+      );
+    } else if (node.x) {
+      lines.push(`  /** \`${syntax}\` */`, `  (): ${names.get(node)};`);
+    }
+
+    // Calls: every run of consecutive arguments, so `f(a)(b)` and `f(a, b)` both type-check. Sibling
+    // arguments with the same types (`tp <targets>` / `tp <destination>`) merge into one signature
+    // returning both nodes' types, because the runtime keeps both until later arguments decide.
+    const sigs = new Map<string, { params: Param[]; returns: Set<string>; syntax: string[] }>();
+    const calls = (from: TreeNode, params: Param[], path: string, depth: number) => {
+      if (depth >= MAX_ARGS_PER_CALL) return;
+      for (const [key, child] of Object.entries(from.c ?? {})) {
+        if (child.l) continue;
+        const p = [...params, { name: camel(key), type: argType(child) }];
+        const childSyntax = join(path, `<${key}>`);
+        const sigKey = p.map((x) => x.type).join(", ");
+        const sig = sigs.get(sigKey) ?? { params: p, returns: new Set<string>(), syntax: [] };
+        sig.returns.add(typeOf(child, childSyntax));
+        sig.syntax.push(childSyntax);
+        sigs.set(sigKey, sig);
+        const next = continuation(root, child);
+        if (next !== root) calls(next, p, childSyntax, depth + 1);
       }
-      const sigs = finish([...walk(child, [], [keyStr.split("/").pop()!, lit])]);
-      methods.push(renderOverloads("  ", pascal(lit), sigs, `return this.$c(${JSON.stringify(lit)}, args);`));
+    };
+    calls(node, [], syntax, 0);
+    // TS picks the first matching overload, and catch-all string types (selectors, ids) also accept
+    // positions: list signatures with fewer catch-all parameters first, so `"~ ~1 ~"` picks Vec3.
+    const broad = (sig: { params: Param[] }) => sig.params.filter((p) => BROAD_TYPE.test(p.type)).length;
+    for (const sig of [...sigs.values()].sort((a, b) => broad(a) - broad(b))) {
+      lines.push(
+        `  /** ${sig.syntax.map((x) => `\`${x}\``).join(" or ")} */`,
+        `  (${renderParams(sig.params)}): ${[...sig.returns].join(" & ")};`,
+      );
     }
-    chainOut.push(`export class ${cls} extends Chain {\n${methods.join("\n\n")}\n}\nregisterChain(${JSON.stringify(keyStr)}, ${cls});`);
+
+    // Literals: properties.
+    const used = new Map<string, TreeNode>();
+    for (const [key, child] of Object.entries(node.c ?? {})) {
+      if (!child.l) continue;
+      let prop = literalName(key);
+      const taken = prop ? used.get(prop) : undefined;
+      if (taken) {
+        // `minecraft:water_source_conversion` and its alias `water_source_conversion`: same subtree.
+        if (JSON.stringify(taken) === JSON.stringify(child)) continue;
+        warnings.push(`"${join(syntax, key)}": property ${prop} is taken by a sibling; use ["${key}"].`);
+      }
+      if (!prop || taken) prop = JSON.stringify(key);
+      used.set(prop, child);
+      const childSyntax = join(syntax, key);
+      const note =
+        node === root && child.q
+          ? ` — needs permission level ${child.q}; functions run at level 2, so this only works from RCON/console`
+          : "";
+      lines.push(`  /** \`${childSyntax}\`${note} */`, `  readonly ${prop}: ${typeOf(child, childSyntax)};`);
+    }
+
+    const name = names.get(node)!;
+    const doc = node === root ? "/** Every command of this version. */\nexport " : `/** \`${syntax}\` */\n`;
+    return `${doc}interface ${name} {\n${lines.join("\n")}\n}`;
   }
 
-  // ---- root commands
-  const cmdOut: string[] = [];
-  const exported = new Set<string>();
-  let commandCount = 0;
-  for (const [lit, node] of Object.entries(root.c ?? {}).sort(([a], [b]) => a.localeCompare(b))) {
-    const name = pascal(lit);
-    if (!name || RUNTIME_EXPORTS.has(name) || exported.has(name)) {
-      warnings.push(`Command "${lit}" maps to export "${name}", which is taken; skipped (use raw()).`);
-      continue;
-    }
-    exported.add(name);
-    commandCount++;
-    const sigs = finish([...walk(node, [], [lit])]);
-    const note = node.q ? ` — needs permission level ${node.q}; functions run at level 2, so this only works from RCON/console` : "";
-    cmdOut.push(renderOverloads("", `export function ${name}`, sigs, `return command(T, ${JSON.stringify(lit)}, args);`, note));
-  }
+  const out: string[] = [];
+  for (let i = 0; i < pending.length; i++) out.push(renderNode(pending[i]!));
+  const commandCount = Object.values(root.c ?? {}).filter((c) => c.l).length;
 
   if (unknownParsers.size) {
     warnings.push(`Unmapped argument parsers (typed as string): ${[...unknownParsers].sort().join(", ")}`);
@@ -229,15 +199,21 @@ export function generate(
   const commands =
     header +
     `/* eslint-disable */\n` +
-    `import { Chain, bindTree, command, registerChain } from "mcjspacker2/runtime";\n` +
+    `import { createRoot } from "mcjspacker2/runtime";\n` +
     `import type * as R from "mcjspacker2/runtime";\n` +
     `import type { Id } from "./registries.js";\n` +
     `import { tree } from "./tree.js";\n\n` +
-    TYPE_ALIASES + "\n\n" +
-    `const T = bindTree(tree);\n\n` +
-    chainOut.join("\n\n") +
+    TYPE_ALIASES +
     "\n\n" +
-    cmdOut.join("\n\n") +
+    "/**\n" +
+    " * Every command, as a chain: literals are properties, arguments are calls.\n" +
+    " *\n" +
+    " *     $.Execute.As(\"@a\").At(\"@s\").Run.Say(\"hi\");\n" +
+    " *     $.Scoreboard.Players.Set(\"@s\", \"kills\", 0);\n" +
+    " *     $(\"say raw command\");\n" +
+    " */\n" +
+    "export const $ = createRoot(tree) as Commands;\n\n" +
+    out.join("\n\n") +
     "\n";
 
   const registriesTs =
@@ -268,7 +244,7 @@ export function generate(
   return {
     files: { "index.ts": index, "commands.ts": commands, "registries.ts": registriesTs, "tree.ts": treeTs },
     warnings,
-    stats: { commands: commandCount, overloads: overloadCount, chains: chainNodes.length },
+    stats: { commands: commandCount, nodes: names.size },
   };
 }
 
