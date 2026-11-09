@@ -190,7 +190,7 @@ importers:
 
   examples/demo:
     dependencies:
-      mspacker:
+      '@ofekn/mspacker':
         specifier: workspace:*
         version: link:../../packages/mspacker
     devDependencies:

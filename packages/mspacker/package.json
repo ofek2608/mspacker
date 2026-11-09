@@ -1,5 +1,5 @@
 {
-  "name": "mspacker",
+  "name": "@ofekn/mspacker",
   "version": "0.1.0",
   "description": "Write Minecraft datapacks in TypeScript with a command library generated from the game's own datagen.",
   "license": "MIT",

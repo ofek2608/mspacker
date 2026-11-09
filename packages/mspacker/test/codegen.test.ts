@@ -132,7 +132,7 @@ export function WithArgs(args: Macro<"who" | "n" | "name" | "pos">) {
             // The runtime source imports node builtins; user projects see its .d.ts instead.
             typeRoots: [resolve("node_modules/@types")],
             types: ["node"],
-            paths: { "mspacker/runtime": [resolve("src/runtime/index.ts")] },
+            paths: { "@ofekn/mspacker/runtime": [resolve("src/runtime/index.ts")] },
           },
           include: ["use.ts", "gen"],
         }),

@@ -221,8 +221,8 @@ export function generate(
   const commands =
     header +
     `/* eslint-disable */\n` +
-    `import { createRoot } from "mspacker/runtime";\n` +
-    `import type * as R from "mspacker/runtime";\n` +
+    `import { createRoot } from "@ofekn/mspacker/runtime";\n` +
+    `import type * as R from "@ofekn/mspacker/runtime";\n` +
     (/\bId</.test(out.join("\n")) ? `import type { Id } from "./registries.js";\n` : "") +
     `import { tree } from "./tree.js";\n\n` +
     usedTypeAliases(out.join("\n")) +
@@ -277,11 +277,11 @@ export function generate(
     registryList.map(({ key, ids }) => `  ${key}: [${ids.join(", ")}],`).join("\n") +
     "\n};\n";
 
-  const treeTs = header + `import type { TreeNode } from "mspacker/runtime";\nexport const tree: TreeNode = ${JSON.stringify(root)};\n`;
+  const treeTs = header + `import type { TreeNode } from "@ofekn/mspacker/runtime";\nexport const tree: TreeNode = ${JSON.stringify(root)};\n`;
 
   const index =
     header +
-    `export * from "mspacker/runtime";\n` +
+    `export * from "@ofekn/mspacker/runtime";\n` +
     `export * from "./registries.js";\n` +
     `export * from "./commands.js";\n` +
     `export const MINECRAFT_VERSION = ${JSON.stringify(meta.version)};\n`;

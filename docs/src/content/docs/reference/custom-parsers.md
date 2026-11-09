@@ -14,7 +14,7 @@ there. When a version changes how a value is written, the output may be wrong fo
 cases you can describe the value in your config instead of waiting for an update:
 
 ```ts
-import { defineConfig, defineParser } from "mspacker";
+import { defineConfig, defineParser } from "@ofekn/mspacker";
 
 export default defineConfig({
   version: "27.1",
@@ -65,12 +65,12 @@ for unknown parsers.
   ```
 
 Compare `packFormat` rather than the version string: it increases with every version, snapshots
-included. `FORMAT_BELOW_NAME` and `FORMAT_SNBT_TEXT` are exported from `mspacker` as examples of
+included. `FORMAT_BELOW_NAME` and `FORMAT_SNBT_TEXT` are exported from `@ofekn/mspacker` as examples of
 thresholds the built-in parsers use. The built-in definitions are exported as `PARSERS`, so you can
 wrap one:
 
 ```ts
-import { defineParser, PARSERS } from "mspacker";
+import { defineParser, PARSERS } from "@ofekn/mspacker";
 
 const base = PARSERS["minecraft:component"];
 const component = defineParser({

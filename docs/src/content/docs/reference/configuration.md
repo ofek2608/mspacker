@@ -5,7 +5,7 @@ description: Every option in mspacker.config.ts.
 
 ```ts
 // mspacker.config.ts
-import { defineConfig } from "mspacker";
+import { defineConfig } from "@ofekn/mspacker";
 
 export default defineConfig({
   version: "26.3",

@@ -48,7 +48,7 @@ export function scaffold(dir: string, opts: InitOptions): void {
   if (!CONFIG_NAMES.some((n) => existsSync(join(dir, n)))) {
     write(
       "mspacker.config.ts",
-      `import { defineConfig } from "mspacker";
+      `import { defineConfig } from "@ofekn/mspacker";
 
 export default defineConfig({
   version: ${JSON.stringify(opts.version ?? "26.3")},
@@ -66,8 +66,8 @@ export default defineConfig({
   pkg.type ??= "module";
   pkg.imports = { ...(pkg.imports ?? {}), "#mc": "./.mspacker/gen/index.ts" };
   pkg.scripts = { gen: "mspacker gen", build: "mspacker build", dev: "mspacker dev", typecheck: "tsc --noEmit", ...(pkg.scripts ?? {}) };
-  if (!pkg.dependencies?.mspacker && !pkg.devDependencies?.mspacker) {
-    pkg.devDependencies = { ...(pkg.devDependencies ?? {}), mspacker: `^${OWN_VERSION}` };
+  if (!pkg.dependencies?.["@ofekn/mspacker"] && !pkg.devDependencies?.["@ofekn/mspacker"]) {
+    pkg.devDependencies = { ...(pkg.devDependencies ?? {}), "@ofekn/mspacker": `^${OWN_VERSION}` };
   }
   if (!pkg.dependencies?.typescript && !pkg.devDependencies?.typescript) {
     pkg.devDependencies = { ...(pkg.devDependencies ?? {}), typescript: "^7.0.2" };

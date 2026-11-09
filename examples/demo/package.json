@@ -12,7 +12,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "mspacker": "workspace:*"
+    "@ofekn/mspacker": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^7.0.2"

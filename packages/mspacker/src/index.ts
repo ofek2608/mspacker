@@ -1,5 +1,5 @@
 /**
- * What you import from `mspacker` itself: `defineConfig` for mspacker.config.ts, and the pieces for
+ * What you import from `@ofekn/mspacker` itself: `defineConfig` for mspacker.config.ts, and the pieces for
  * custom argument types (see "Custom argument types" in the reference).
  *
  * @packageDocumentation

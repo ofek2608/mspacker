@@ -86,8 +86,8 @@ async function setupProject(version: string, commands: unknown) {
   const project = join(base, "project");
   rmSync(project, { recursive: true, force: true });
   mkdirSync(join(project, "src"), { recursive: true });
-  mkdirSync(join(project, "node_modules"), { recursive: true });
-  symlinkSync(PKG, join(project, "node_modules", "mspacker"), "dir");
+  mkdirSync(join(project, "node_modules", "@ofekn"), { recursive: true });
+  symlinkSync(PKG, join(project, "node_modules", "@ofekn", "mspacker"), "dir");
   writeFileSync(join(project, "package.json"), JSON.stringify({ name: "matrix", type: "module", imports: { "#mc": "./.mspacker/gen/index.ts" } }));
   writeFileSync(
     join(project, "mspacker.config.ts"),
