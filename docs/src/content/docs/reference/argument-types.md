@@ -112,7 +112,7 @@ Objects and arrays are written as NBT:
 $.summon("pig", "~ ~ ~", { NoAI: true, CustomName: { text: "Bob" } });
 ```
 
-See [NBT](/guides/raw-content/#nbt) for numbers like `1b` and `5f`.
+See [NBT](/mspacker/guides/raw-content/#nbt) for numbers like `1b` and `5f`.
 
 ## Ranges and times
 

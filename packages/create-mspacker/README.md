@@ -1,6 +1,6 @@
 # create-mspacker
 
-Set up a [MSPacker](../mspacker) project: Minecraft data packs written in TypeScript.
+Set up a [MSPacker](https://github.com/ofek2608/mspacker/tree/main/packages/mspacker) project: Minecraft data packs written in TypeScript.
 
 ```sh
 npm create mspacker@latest
@@ -22,4 +22,4 @@ Options: `--version <id>`, `--namespace <ns>`, `--description <text>`, `--yes` (
 
 ## License
 
-[MIT](LICENSE)
+[MIT](https://github.com/ofek2608/mspacker/blob/main/packages/create-mspacker/LICENSE)

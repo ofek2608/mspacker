@@ -32,7 +32,7 @@ command library contains and the `pack.mcmeta` format. Run `mspacker gen` after 
 | `"mypack"` or `"mypack:"` | `mypack:<file>/<name>` |
 | `"mypack:generated"` or `"mypack:generated/"` | `mypack:generated/<file>/<name>` |
 
-See [function ids](/guides/function-ids/).
+See [function ids](/mspacker/guides/function-ids/).
 
 ### `name`
 
@@ -49,7 +49,7 @@ TypeScript source directory. Default `"src"`.
 
 ### `raw`
 
-Directory copied into the pack as-is. Default `"datapack"`. See [tags and files](/guides/raw-content/).
+Directory copied into the pack as-is. Default `"datapack"`. See [tags and files](/mspacker/guides/raw-content/).
 
 ### `outDir`
 
@@ -80,7 +80,7 @@ overrides it. Default: the OS's standard location. Server jars are never taken f
 ### `parsers`
 
 Advanced: describe values a new Minecraft version added or changed. See
-[new value types](/reference/custom-parsers/).
+[new value types](/mspacker/reference/custom-parsers/).
 
 ## Environment variables
 

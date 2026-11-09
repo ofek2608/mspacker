@@ -19,12 +19,12 @@ my-pack/
 ```
 
 - **`src/`**: your code. Functions marked with
-  [`@mcfunction`](/guides/writing-functions/#marking-functions) can be in any file and folder. The
-  file's path becomes part of the [function's name](/guides/function-ids/).
+  [`@mcfunction`](/mspacker/guides/writing-functions/#marking-functions) can be in any file and folder. The
+  file's path becomes part of the [function's name](/mspacker/guides/function-ids/).
 - **`datapack/`**: anything that isn't a TypeScript function: hand-written `.mcfunction` files,
-  advancements, loot tables, tags. See [tags and files](/guides/raw-content/).
+  advancements, loot tables, tags. See [tags and files](/mspacker/guides/raw-content/).
 - **`.mspacker/gen/`**: created by `mspacker gen`. Don't edit it; it's recreated when you run `gen` again.
-- **`server/`**: the [dev server](/guides/dev-mode/). Put a server jar here to use your own;
+- **`server/`**: the [dev server](/mspacker/guides/dev-mode/). Put a server jar here to use your own;
   otherwise the official one is downloaded.
 
 The template's `.gitignore` excludes `.mspacker/`, `dist/`, `node_modules/` and `server/`.

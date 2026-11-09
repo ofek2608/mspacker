@@ -17,7 +17,7 @@ export function Heal() {
 ```
 
 Build the pack and run it in game with `/function mypack:main/heal`. The name comes from the file
-and the function, see [function names](/guides/function-ids/).
+and the function, see [function names](/mspacker/guides/function-ids/).
 
 ## Marking functions
 
@@ -26,7 +26,7 @@ and the function, see [function names](/guides/function-ids/).
 | `/** @mcfunction */` | Becomes a Minecraft function. |
 | `/** @load */` | Also runs when the pack loads (and on `/reload`). |
 | `/** @tick */` | Also runs every tick. |
-| `/** @mcfunction custom/name */` | Uses a [different name](/guides/function-ids/#choosing-a-name). |
+| `/** @mcfunction custom/name */` | Uses a [different name](/mspacker/guides/function-ids/#choosing-a-name). |
 | `/** @dev */` | Only exists while developing, see [debug-only functions](#debug-only-functions). |
 
 Comments can be combined: `/** @load @mcfunction setup */`. With a description, put the marks on
@@ -77,13 +77,13 @@ say 1...
 - Loops repeat commands, `if` decides which commands to write, and variables hold values while
   building. They don't exist in game.
 - To react to what happens in game (scores, players, blocks), use Minecraft's own tools:
-  [`execute`](/guides/execute/), scoreboards and storage.
+  [`execute`](/mspacker/guides/execute/), scoreboards and storage.
 - You can use any npm package or read files to generate commands.
 - Commands must be inside a function. A command at the top of a file is an error.
 
 ## Debug-only commands
 
-`__DEV__` is `true` while you work with [`mspacker dev`](/guides/dev-mode/) and `false` in
+`__DEV__` is `true` while you work with [`mspacker dev`](/mspacker/guides/dev-mode/) and `false` in
 `mspacker build`, so debug messages never reach the finished pack:
 
 ```ts
@@ -158,7 +158,7 @@ object field, starts with that name, so it's easier to recognize: `const step = 
 
 The name is the same on every build, but it can change whenever the function changes (or with a new
 MSPacker version), so don't use it from outside your pack. If something else needs to call it,
-declare it at the top of a file or [give it a name](/guides/function-ids/#choosing-a-name).
+declare it at the top of a file or [give it a name](/mspacker/guides/function-ids/#choosing-a-name).
 
 ```ts
 $.execute.at("@p").run.function(() => {

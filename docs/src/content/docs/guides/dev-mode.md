@@ -20,8 +20,8 @@ If you change `version` in the config while dev is running, it regenerates the c
 new version and swaps the server jar (if MSPacker downloaded it). Stop the server and run
 `mspacker dev` again to play on the new version.
 
-Dev builds set [`__DEV__`](/guides/writing-functions/#debug-only-commands) to `true` and include
-[`@dev` functions](/guides/writing-functions/#debug-only-functions), so you can add commands and
+Dev builds set [`__DEV__`](/mspacker/guides/writing-functions/#debug-only-commands) to `true` and include
+[`@dev` functions](/mspacker/guides/writing-functions/#debug-only-functions), so you can add commands and
 functions that only exist while developing.
 
 ## The server directory

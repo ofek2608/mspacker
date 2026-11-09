@@ -21,7 +21,7 @@ Anything can follow `run`, including another `execute`.
 ## Running several commands
 
 Use `run.function` with a function, the same as calling a function anywhere else. A function
-written inline gets [a generated name](/guides/writing-functions/#functions-without-a-name):
+written inline gets [a generated name](/mspacker/guides/writing-functions/#functions-without-a-name):
 
 ```ts
 $.execute.as("@a").run.function(Reward);

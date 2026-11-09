@@ -5,7 +5,7 @@ description: Tags, advancements and other data pack files, hand-written function
 
 ## The `datapack/` directory
 
-Everything in `datapack/` (the [`raw`](/reference/configuration/#raw) setting) is copied into the
+Everything in `datapack/` (the [`raw`](/mspacker/reference/configuration/#raw) setting) is copied into the
 built pack as-is:
 
 ```
@@ -54,7 +54,7 @@ The first argument is the folder under `data/<namespace>/`: `advancement`, `pred
 ## Commands as text
 
 Calling `$` writes a command exactly as you give it. Use it for anything MSPacker doesn't cover,
-or for macro lines (usually [macro functions](/guides/macros/) are easier):
+or for macro lines (usually [macro functions](/mspacker/guides/macros/) are easier):
 
 ```ts
 import { $, fnId } from "#mc";

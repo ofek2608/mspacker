@@ -113,14 +113,14 @@ atPlayers.run.say("two");   // execute as @a at @s run say two
 ## Writing a command as text
 
 Calling `$` itself writes a line exactly as you give it. Use it for anything MSPacker doesn't
-cover, or for macro lines (usually [macro functions](/guides/macros/) are easier):
+cover, or for macro lines (usually [macro functions](/mspacker/guides/macros/) are easier):
 
 ```ts
 $("say written as-is");
 $("$tp @s $(x) $(y) $(z)");
 ```
 
-More in [tags, files and text commands](/guides/raw-content/#commands-as-text).
+More in [tags, files and text commands](/mspacker/guides/raw-content/#commands-as-text).
 
 ## Common errors
 
@@ -140,6 +140,6 @@ still listed, with a note, but only work from the server console.
 
 ## Different Minecraft versions
 
-The commands you get match the Minecraft version in your [config](/reference/configuration/#version):
+The commands you get match the Minecraft version in your [config](/mspacker/reference/configuration/#version):
 commands that don't exist in your version aren't offered, and values are written the way your
 version expects. Run `mspacker gen` after changing versions.

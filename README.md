@@ -110,9 +110,10 @@ npx mspacker build --zip  # also a .zip
 
 ## Documentation
 
-The full guide is the documentation site in [`docs/`](docs). Run it with `pnpm docs` from the
-repository root. It covers commands, `execute`, function names, tags and data files, dev mode,
-configuration and supported versions, plus an API reference generated from the code.
+The full guide is at **[ofek2608.github.io/mspacker](https://ofek2608.github.io/mspacker/)** (source
+in [`docs/`](docs), run it locally with `pnpm docs`). It covers commands, `execute`, function names,
+tags and data files, dev mode, configuration and supported versions, plus an API reference generated
+from the code.
 
 ## Packages
 

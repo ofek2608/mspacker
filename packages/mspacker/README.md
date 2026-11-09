@@ -50,12 +50,12 @@ MSPacker to an existing project, run `npm create mspacker@latest .` in it.
 
 ## Documentation
 
-The full guide is the Starlight site in [`docs/`](../../docs): run `pnpm docs` from the repository
-root. It covers writing functions and commands, `execute`, function names, tags and other data pack
-files, dev mode, configuration and supported versions.
+The full guide is at **[ofek2608.github.io/mspacker](https://ofek2608.github.io/mspacker/)**. It
+covers writing functions and commands, `execute`, function names, tags and other data pack files,
+dev mode, configuration and supported versions.
 
-Contributing: see [`CONTRIBUTING.md`](../../CONTRIBUTING.md).
+Contributing: see [`CONTRIBUTING.md`](https://github.com/ofek2608/mspacker/blob/main/CONTRIBUTING.md).
 
 ## License
 
-[MIT](LICENSE)
+[MIT](https://github.com/ofek2608/mspacker/blob/main/packages/mspacker/LICENSE)

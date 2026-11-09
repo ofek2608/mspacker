@@ -84,7 +84,7 @@ export function Warp({ to }: Macro) {
 ```
 
 The error mentions `TypedArg<...>` with the type it expected. Any argument type from the
-[API reference](/reference/api/library-mc/readme/) works here (`Vec3`, `Selector`, `Rotation`, ...).
+[API reference](/mspacker/reference/api/library-mc/readme/) works here (`Vec3`, `Selector`, `Rotation`, ...).
 
 ## Text in NBT and text components
 

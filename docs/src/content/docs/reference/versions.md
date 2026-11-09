@@ -14,7 +14,7 @@ some command words. MSPacker writes your pack the way your version expects, so t
 works across versions as long as the commands exist.
 
 If a new Minecraft version changes a command in a way MSPacker doesn't know yet, you can
-[teach it yourself](/reference/custom-parsers/).
+[teach it yourself](/mspacker/reference/custom-parsers/).
 
 ## Tested versions
 

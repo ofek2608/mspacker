@@ -17,7 +17,7 @@ letter by letter, so `HTTPGet` becomes `h_t_t_p_get`. Rename the function, or
 
 ## A folder for everything
 
-The [namespace](/reference/configuration/#namespace) can include a folder, which keeps your
+The [namespace](/mspacker/reference/configuration/#namespace) can include a folder, which keeps your
 TypeScript functions apart from hand-written ones:
 
 ```ts
@@ -97,5 +97,5 @@ export function Setup() {
 }
 ```
 
-`id` also works with [macro arguments](/guides/macros/): `` id(macro`rewards/${kind}`) `` is
+`id` also works with [macro arguments](/mspacker/guides/macros/): `` id(macro`rewards/${kind}`) `` is
 `mypack:rewards/$(kind)`.

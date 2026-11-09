@@ -10,7 +10,7 @@ npm create mspacker@latest [dir] -- [options]
 ```
 
 Sets up a new project interactively, or adds MSPacker to an existing one (`.` as the directory;
-existing files are kept). See [getting started](/getting-started/#create-a-project) for
+existing files are kept). See [getting started](/mspacker/getting-started/#create-a-project) for
 the options.
 
 ## `mspacker`
@@ -26,7 +26,7 @@ mspacker gen [--force]
 Reads the commands of your Minecraft `version` from its server jar and writes them into
 `.mspacker/gen`, where `$` comes from. Run it again after changing `version`. The result is cached, so
 it's quick after the first time; `--force` reads the jar again. If the version has kinds of values
-MSPacker doesn't know yet, it says so (see [new value types](/reference/custom-parsers/)).
+MSPacker doesn't know yet, it says so (see [new value types](/mspacker/reference/custom-parsers/)).
 
 ### `mspacker build`
 
@@ -43,7 +43,7 @@ Builds the pack into `<outDir>/<name>`, replacing what was there. `--zip` also w
 mspacker dev [--save <name|auto>]
 ```
 
-Starts the dev server, rebuilds on every save and reloads the pack in game. See [dev mode](/guides/dev-mode/).
+Starts the dev server, rebuilds on every save and reloads the pack in game. See [dev mode](/mspacker/guides/dev-mode/).
 
 | Option | |
 |---|---|

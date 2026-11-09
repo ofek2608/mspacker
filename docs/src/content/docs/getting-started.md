@@ -8,7 +8,7 @@ description: Create a project, generate the command library and build your first
 - Node.js 22.22 or newer.
 - Java, for running the Minecraft server. MSPacker prefers the Java runtime the Minecraft
   launcher installed for your version, then `JAVA_HOME`, then `java` on your `PATH`. See
-  [`java`](/reference/configuration/#java).
+  [`java`](/mspacker/reference/configuration/#java).
 
 ## Create a project
 
@@ -21,7 +21,7 @@ The setup asks for:
 
 - **Project directory**: where to create the project.
 - **Namespace**: your data pack's namespace, such as `mypack`. See
-  [namespaces](/reference/configuration/#namespace) for the `mypack:generated/` form.
+  [namespaces](/mspacker/reference/configuration/#namespace) for the `mypack:generated/` form.
 - **Minecraft version**: the list has the latest release and snapshot, the latest patch of every
   minor version since 1.13 (the first version with data packs), every 1.21 game drop, and the April
   Fools versions at the bottom. Pick **Other version…** to search every version that supports data packs.
@@ -66,7 +66,7 @@ npm run dev     # rebuild into a dev server on every save and /reload it
 ```
 
 Your code imports `$` from `#mc`, a package import that points at the generated library. Every
-command hangs off it: `$.say("hi")`, `$.execute.as("@a").run.say("hi")`. See [commands](/guides/commands/).
+command hangs off it: `$.say("hi")`, `$.execute.as("@a").run.say("hi")`. See [commands](/mspacker/guides/commands/).
 Run `gen` again whenever you change `version`.
 
 ## Your first function
@@ -101,5 +101,5 @@ In game, run `/function mypack:main/greet`.
 
 ## Next
 
-- [Writing functions](/guides/writing-functions/): how TypeScript turns into commands.
-- [Dev mode](/guides/dev-mode/): the dev server, RCON and the EULA.
+- [Writing functions](/mspacker/guides/writing-functions/): how TypeScript turns into commands.
+- [Dev mode](/mspacker/guides/dev-mode/): the dev server, RCON and the EULA.

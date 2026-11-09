@@ -2,7 +2,13 @@ import { defineConfig } from "astro/config";
 import starlight from "@astrojs/starlight";
 import starlightTypeDoc, { typeDocSidebarGroup } from "starlight-typedoc";
 
+// Published to GitHub Pages under /mspacker/ (see .github/workflows/docs.yml). Links between
+// pages in the Markdown include this prefix: [macros](/mspacker/guides/macros/).
+const base = "/mspacker";
+
 export default defineConfig({
+  site: "https://ofek2608.github.io",
+  base,
   integrations: [
     starlight({
       title: "MineScriptPacker",

@@ -3,6 +3,13 @@
   "version": "0.1.0",
   "description": "Create an MSPacker project: Minecraft data packs written in TypeScript.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ofek2608/mspacker.git",
+    "directory": "packages/create-mspacker"
+  },
+  "homepage": "https://ofek2608.github.io/mspacker/",
+  "bugs": "https://github.com/ofek2608/mspacker/issues",
   "type": "module",
   "bin": {
     "create-mspacker": "./bin/create-mspacker.js"
