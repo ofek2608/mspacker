@@ -5,7 +5,7 @@ description: Create a project, generate the command library and build your first
 
 ## Requirements
 
-- Node.js 20 or newer.
+- Node.js 22.22 or newer.
 - Java, for running the Minecraft server. mcjspacker2 prefers the Java runtime the Minecraft
   launcher installed for your version, then `JAVA_HOME`, then `java` on your `PATH`. See
   [`java`](/reference/configuration/#java).
@@ -48,10 +48,14 @@ npm create mcjspacker2@latest my-pack -- --version 26.3 --namespace mypack --yes
 
 ### Add to an existing project
 
+Run it in the project's folder:
+
 ```sh
-npm install -D mcjspacker2 typescript
-npx mcjs2 init --mc-version 26.3 --namespace mypack
+npm create mcjspacker2@latest .
 ```
+
+Existing files are kept: it adds `mcjs2.config.ts`, the `#mc` import, scripts and dependencies in
+`package.json`, `tsconfig.json`, `.gitignore` entries and `src/main.ts`.
 
 ## Generate, build, run
 

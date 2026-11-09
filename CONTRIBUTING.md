@@ -4,16 +4,17 @@
 
 ```
 packages/mcjspacker2/         the tool (CLI `mcjs2`) and the runtime user code imports
-packages/create-mcjspacker2/  `npm create mcjspacker2`, a thin wrapper around src/create
+packages/create-mcjspacker2/  `npm create mcjspacker2`: standalone (no dependency on the tool), owns the
+                              project template; released with the same version as mcjspacker2
 examples/demo/                a real project used for manual end-to-end checks
 docs/                         the Starlight documentation site
 ```
 
 ```sh
 pnpm install
-pnpm -r typecheck
-pnpm --filter mcjspacker2 test          # unit tests (fast)
-pnpm --filter mcjspacker2 build         # compile to dist/ (the CLI and the build worker run from dist)
+pnpm typecheck
+pnpm test                               # unit tests of both packages (fast)
+pnpm build                              # compile to dist/ (the CLIs and the build worker run from dist)
 pnpm docs                               # docs dev server
 ```
 
@@ -33,9 +34,10 @@ In `examples/demo`: `npx mcjs2 gen`, `npx mcjs2 build`, `npx mcjs2 dev`.
    - `command.ts`: `$` is a Proxy walking the compact tree. Property access follows literals (or takes
      a string argument), calls consume arguments; sibling arguments are kept as candidates until later
      values decide.
-   - `state.ts`: the recorder. `fnId` is the single way a function gets its name: named functions are
-     queued and recorded one at a time (no nesting), anonymous ones are recorded on the spot and named
-     by a hash of their commands.
+   - `state.ts`: the recorder. `fnId` is the single way a function gets its name. Every function is
+     queued and recorded one at a time (no nesting). Named functions get their name right away;
+     anonymous ones get a placeholder, and once everything is recorded they're named by a hash of
+     their commands (references first, cycles by position) and the placeholders are replaced.
    - `parsers.ts`: the argument type registry (see below).
 4. **pack** (`src/build/pack.ts`): merge with the raw `datapack/` dir, write `pack.mcmeta`, handle
    old folder names.

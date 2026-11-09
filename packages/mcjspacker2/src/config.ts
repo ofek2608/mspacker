@@ -77,7 +77,7 @@ export function findConfig(dir: string): string | null {
 
 export async function loadConfig(projectDir: string): Promise<ResolvedConfig> {
   const configFile = findConfig(projectDir);
-  if (!configFile) throw new Error(`No mcjs2.config.ts in ${projectDir}. Run \`mcjs2 init\`.`);
+  if (!configFile) throw new Error(`No mcjs2.config.ts in ${projectDir}. Create a project with \`npm create mcjspacker2\`.`);
   const workDir = join(projectDir, ".mcjs2");
   mkdirSync(join(workDir, "build"), { recursive: true });
   const outfile = join(workDir, "build", "config.mjs");

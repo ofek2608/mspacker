@@ -57,9 +57,10 @@ export interface State {
   metas: Map<Function, FnMeta>;
   ids: Map<Function, string>;
   bodies: Map<Function, string[]>;
-  recording: Set<Function>;
-  /** Named functions waiting to be recorded, in order. */
+  /** Functions waiting to be recorded, in order. */
   queue: Function[];
+  /** Anonymous functions, by placeholder number; named once everything is recorded. */
+  anonymous: { fn: Function; origin: string; lines: string[] }[];
   functions: Map<string, FunctionRecord>;
   stack: BufferItem[][];
   tags: Map<string, TagRecord>;
@@ -105,8 +106,8 @@ export function resetState(
     metas: new Map(),
     ids: new Map(),
     bodies: new Map(),
-    recording: new Set(),
     queue: [],
+    anonymous: [],
     functions: new Map(),
     stack: [],
     tags: new Map(),
@@ -193,13 +194,14 @@ export function recordBody(fn: Function): string[] {
 
 // ---------------------------------------------------------------- function ids
 //
-// `fnId` is the one way a function gets its name and gets written:
-// - Named functions have a name from their file and function name, known right away. `fnId` returns
-//   it and queues the function; queued functions are recorded one at a time after the current one,
-//   so long chains of functions calling each other never nest.
-// - Anonymous functions are named after a hash of their commands, so `fnId` records them on the
-//   spot (they see the caller's variables as they are at that moment). Identical bodies share a
-//   name. Anonymous functions that reference each other in a cycle get a position-based name.
+// `fnId` is the one way a function gets its name and gets written. Every function is queued and
+// recorded after the current one, one at a time, so long chains of functions calling each other
+// never nest. The only difference between named and anonymous functions is the name:
+// - Named functions have a name from their file and function name, known right away.
+// - Anonymous functions are named after a hash of their commands, known only once everything is
+//   recorded. Until then `fnId` returns a placeholder, which is replaced in every output file
+//   (function lines, tags, resources). Identical bodies share a name; anonymous functions that
+//   reference each other in a cycle get a position-based name.
 
 function claim(id: string, fn: Function | null, origin: string): void {
   const s = getState();
@@ -221,18 +223,13 @@ function hash(text: string): string {
   return createHash("sha1").update(text).digest("hex");
 }
 
-/** Anonymous functions are recorded where they're referenced, so a chain of them nests. */
-const MAX_ANONYMOUS_DEPTH = 400;
+/** Placeholder names of anonymous functions: `<ns>:mcjs2_pending/<n>/fn`. */
+function placeholder(n: number): string {
+  return `${getState().spec.ns}:mcjs2_pending/${n}/fn`;
+}
 
-/** Record `fn`'s body, marking it as being recorded (for cycle detection). */
-function record(fn: Function): string[] {
-  const s = getState();
-  s.recording.add(fn);
-  try {
-    return recordBody(fn);
-  } finally {
-    s.recording.delete(fn);
-  }
+function placeholderPattern(): RegExp {
+  return new RegExp(`${getState().spec.ns.replace(/[.]/g, "\\.")}:mcjs2_pending/(\\d+)/fn`, "g");
 }
 
 /**
@@ -258,55 +255,127 @@ export function fnId(ref: unknown): string {
   if (named) {
     claim(named, ref, origin);
     s.ids.set(ref, named);
-    s.queue.push(ref);
-    return named;
-  }
-
-  // Anonymous and already being recorded: it references itself through a cycle.
-  if (s.recording.has(ref)) {
-    const id = anonymousId(s.spec, meta?.file, "p" + hash(`${meta?.file}:${meta?.line}:${ref.toString()}`).slice(0, 8));
-    claim(id, ref, origin);
+  } else {
+    const id = placeholder(s.anonymous.length);
+    s.anonymous.push({ fn: ref, origin, lines: [] });
     s.ids.set(ref, id);
-    return id;
   }
-
-  if (s.recording.size >= MAX_ANONYMOUS_DEPTH) {
-    throw new Error(
-      `${origin}: more than ${MAX_ANONYMOUS_DEPTH} anonymous functions call each other in a chain. ` +
-        "Give the functions in the chain names (named functions don't have this limit).",
-    );
-  }
-  const lines = record(ref);
-  const assigned = s.ids.get(ref);
-  if (assigned) {
-    s.functions.get(assigned)!.lines = lines;
-    return assigned;
-  }
-  const body = lines.join("\n");
-  const full = hash(body);
-  for (let len = 8; len <= full.length; len += 4) {
-    const id = anonymousId(s.spec, meta?.file, full.slice(0, len));
-    const existing = s.functions.get(id);
-    if (!existing) {
-      s.functions.set(id, { owner: ref, origin, lines });
-      s.ids.set(ref, id);
-      return id;
-    }
-    if (existing.lines.join("\n") === body) {
-      s.ids.set(ref, id); // identical body: share the function
-      return id;
-    }
-  }
-  throw new Error(`Could not allocate an id for ${origin}.`);
+  s.queue.push(ref);
+  return s.ids.get(ref)!;
 }
 
-/** Record queued named functions, one at a time. */
+/** Record queued functions, one at a time. */
 function drainQueue(): void {
   const s = getState();
   while (s.queue.length) {
     const fn = s.queue.shift()!;
-    s.functions.get(s.ids.get(fn)!)!.lines = record(fn);
+    const lines = recordBody(fn);
+    const id = s.ids.get(fn)!;
+    const anon = /^.*:mcjs2_pending\/(\d+)\/fn$/.exec(id);
+    if (anon) s.anonymous[Number(anon[1])]!.lines = lines;
+    else s.functions.get(id)!.lines = lines;
   }
+}
+
+/**
+ * Name every anonymous function after its commands, then replace the placeholders. Functions are
+ * named after the functions they reference, so this goes through the reference graph's strongly
+ * connected components, references first; members of a cycle are named by position instead.
+ * Returns the placeholder replacer.
+ */
+function resolveAnonymous(): (text: string) => string {
+  const s = getState();
+  const anon = s.anonymous;
+  const names: (string | undefined)[] = new Array(anon.length);
+  const pattern = placeholderPattern();
+  const refs = anon.map((a) => [...new Set([...a.lines.join("\n").matchAll(pattern)].map((m) => Number(m[1])))]);
+  const replace = (text: string) =>
+    text.replace(pattern, (whole, n: string) => names[Number(n)] ?? whole);
+
+  const allocate = (index: number, base: string, body: string | null): string => {
+    const a = anon[index]!;
+    const meta = s.metas.get(a.fn);
+    for (let len = 8; len <= base.length; len += 4) {
+      const id = anonymousId(s.spec, meta?.file, (body === null ? "p" : "") + base.slice(0, len));
+      const existing = s.functions.get(id);
+      if (!existing) {
+        s.functions.set(id, { owner: a.fn, origin: a.origin, lines: [] });
+        return id;
+      }
+      // Identical body: share the function.
+      if (body !== null && existing.lines.join("\n") === body) return id;
+    }
+    throw new Error(`Could not allocate an id for ${a.origin}.`);
+  };
+
+  const named = (members: number[]) => {
+    const cyclic = members.length > 1 || refs[members[0]!]!.includes(members[0]!);
+    if (!cyclic) {
+      const i = members[0]!;
+      const lines = anon[i]!.lines.map(replace);
+      const body = lines.join("\n");
+      const id = allocate(i, hash(body), body);
+      names[i] = id;
+      const rec = s.functions.get(id)!;
+      if (rec.owner === anon[i]!.fn) rec.lines = lines;
+      return;
+    }
+    for (const i of members) {
+      const a = anon[i]!;
+      const meta = s.metas.get(a.fn);
+      names[i] = allocate(i, hash(`${meta?.file}:${meta?.line}:${a.fn.toString()}:${i}`), null);
+    }
+    for (const i of members) s.functions.get(names[i]!)!.lines = anon[i]!.lines.map(replace);
+  };
+
+  // Tarjan's algorithm, iterative (reference chains can be long). Components come out references first.
+  const index: number[] = new Array(anon.length).fill(-1);
+  const low: number[] = new Array(anon.length).fill(0);
+  const onStack: boolean[] = new Array(anon.length).fill(false);
+  const stack: number[] = [];
+  let counter = 0;
+  for (let root = 0; root < anon.length; root++) {
+    if (index[root] !== -1) continue;
+    const work: [number, number][] = [[root, 0]];
+    index[root] = low[root] = counter++;
+    stack.push(root);
+    onStack[root] = true;
+    while (work.length) {
+      const frame = work[work.length - 1]!;
+      const [v, next] = frame;
+      const out = refs[v]!;
+      if (next < out.length) {
+        frame[1]++;
+        const w = out[next]!;
+        if (index[w] === -1) {
+          index[w] = low[w] = counter++;
+          stack.push(w);
+          onStack[w] = true;
+          work.push([w, 0]);
+        } else if (onStack[w]) low[v] = Math.min(low[v]!, index[w]!);
+        continue;
+      }
+      work.pop();
+      const parent = work[work.length - 1];
+      if (parent) low[parent[0]] = Math.min(low[parent[0]]!, low[v]!);
+      if (low[v] === index[v]) {
+        const members: number[] = [];
+        let w: number;
+        do {
+          w = stack.pop()!;
+          onStack[w] = false;
+          members.push(w);
+        } while (w !== v);
+        named(members.reverse());
+      }
+    }
+  }
+
+  for (const [fn, id] of s.ids) {
+    const m = /:mcjs2_pending\/(\d+)\/fn$/.exec(id);
+    if (m) s.ids.set(fn, names[Number(m[1])]!);
+  }
+  return replace;
 }
 
 // ---------------------------------------------------------------- tags and resources
@@ -387,11 +456,12 @@ export function collectOutput(options: OutputOptions = {}): BuildOutput {
     drainQueue();
     for (const tag of s.tags.values()) for (const v of tag.values) if (typeof v === "function") fnId(v);
   } while (s.queue.length);
+  const replace = resolveAnonymous();
 
   const files = new Map<string, string>();
   const tagFiles: [string, string][] = [];
   for (const tag of [...s.tags.values()].sort((a, b) => a.id.localeCompare(b.id))) {
-    const values = tag.values.map((v) => fnId(v));
+    const values = tag.values.map((v) => replace(fnId(v)));
     const [ns, path] = splitId(tag.id);
     tagFiles.push([
       `data/${ns}/tags/${tagFolder(tag.registry)}/${path}.json`,
@@ -400,12 +470,12 @@ export function collectOutput(options: OutputOptions = {}): BuildOutput {
   }
   for (const [id, rec] of [...s.functions.entries()].sort(([a], [b]) => a.localeCompare(b))) {
     const [ns, path] = splitId(id);
-    files.set(`data/${ns}/${folder("function")}/${path}.mcfunction`, rec.lines.join("\n") + (rec.lines.length ? "\n" : ""));
+    files.set(`data/${ns}/${folder("function")}/${path}.mcfunction`, rec.lines.map(replace).join("\n") + (rec.lines.length ? "\n" : ""));
   }
   for (const [p, c] of tagFiles) files.set(p, c);
   for (const res of s.resources.values()) {
     const [ns, path] = splitId(res.id);
-    const data = typeof res.data === "string" ? res.data : JSON.stringify(res.data, null, 2) + "\n";
+    const data = replace(typeof res.data === "string" ? res.data : JSON.stringify(res.data, null, 2) + "\n");
     files.set(`data/${ns}/${folder(res.registry)}/${path}.json`, data);
   }
   return { files, functionCount: s.functions.size };

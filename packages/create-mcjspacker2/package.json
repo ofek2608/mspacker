@@ -7,12 +7,23 @@
     "create-mcjspacker2": "./bin/create-mcjspacker2.js"
   },
   "files": [
-    "bin"
+    "bin",
+    "dist"
   ],
   "engines": {
-    "node": ">=20"
+    "node": ">=20.12"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
-    "mcjspacker2": "workspace:^"
+    "@clack/prompts": "^1.8.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.0"
   }
 }

@@ -200,51 +200,56 @@ describe("queued recording", () => {
     expect(files["data/pk/function/gen/chain/f19999.mcfunction"]).toBe("say n19999\n");
   });
 
-  it("handles chains of anonymous functions up to a limit, with a clear error past it", () => {
-    const chain = (n: number) => {
-      const fns: Function[] = [];
-      for (let i = 0; i < n; i++) {
-        fns.push(() => {
-          $.say(`a${i}`);
-          if (i + 1 < n) $.function(fns[i + 1]);
-        });
-      }
-      return fns[0]!;
-    };
-    function Long() {
-      $.function(chain(1_000));
+  it("records long chains of anonymous functions without nesting", () => {
+    const fns: Function[] = [];
+    for (let i = 0; i < 20_000; i++) {
+      fns.push(() => {
+        $.say(`a${i}`);
+        if (i + 1 < 20_000) $.function(fns[i + 1]);
+      });
     }
-    meta(Long, { file: "main.ts", name: "Long", mcfunction: true });
-    expect(() => build()).toThrow(/more than 400 anonymous functions call each other in a chain/);
-
-    resetState(parseNamespace("pk:gen"));
-    const first = chain(300);
     function Main() {
-      $.function(first);
+      $.function(fns[0]);
     }
     meta(Main, { file: "main.ts", name: "Main", mcfunction: true });
     const files = build();
-    expect(Object.keys(files).filter((f) => f.includes("__anon"))).toHaveLength(300);
-    expect(files["data/pk/function/gen/main/main.mcfunction"]).toMatch(/^function pk:gen\/__anon\/[0-9a-f]{8}\n$/);
+    expect(Object.keys(files).filter((f) => f.includes("__anon"))).toHaveLength(20_000);
+    const first = /^function (\S+)\n$/.exec(files["data/pk/function/gen/main/main.mcfunction"]!)![1]!;
+    expect(first).toMatch(/^pk:gen\/__anon\/[0-9a-f]{8}$/);
+    expect(files[`data/pk/function/${first.slice(3)}.mcfunction`]).toMatch(/^say a0\nfunction pk:gen\/__anon\/[0-9a-f]{8}\n$/);
   });
 
-  it("records anonymous functions immediately, so they see the caller's state", () => {
+  it("records anonymous functions after the current one, like named ones", () => {
     function Main() {
       let wave = 0;
       for (; wave < 2; wave++) {
         $.execute.as("@a").run.function(() => {
           $.say(`wave ${wave}`);
-          $.say("x");
+        });
+      }
+      for (let round = 0; round < 2; round++) {
+        $.function(() => {
+          $.say(`round ${round}`);
         });
       }
     }
     meta(Main, { file: "main.ts", name: "Main", mcfunction: true });
     const files = build();
     const bodies = Object.entries(files).filter(([f]) => f.includes("__anon")).map(([, b]) => b).sort();
-    expect(bodies).toEqual(["say wave 0\nsay x\n", "say wave 1\nsay x\n"]);
+    // `wave` is shared by both callbacks and is 2 by the time they run; `round` is per iteration.
+    expect(bodies).toEqual(["say round 0\n", "say round 1\n", "say wave 2\n"]);
   });
 
-  it("gives the real name of anonymous functions right away", () => {
+  it("never inlines anonymous functions, even with one command", () => {
+    function Main() {
+      $.function(() => $.say("one"));
+    }
+    meta(Main, { file: "main.ts", name: "Main", mcfunction: true });
+    const files = build();
+    expect(files["data/pk/function/gen/main/main.mcfunction"]).toMatch(/^function pk:gen\/__anon\/[0-9a-f]{8}\n$/);
+  });
+
+  it("replaces the names of anonymous functions everywhere in the output", () => {
     const anon = () => {
       $.say("a");
       $.say("b");

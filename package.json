@@ -2,10 +2,11 @@
   "name": "mcjspacker2-workspace",
   "private": true,
   "type": "module",
+  "packageManager": "pnpm@12.15.0",
   "scripts": {
-    "build": "pnpm -r --filter ./packages/* build",
-    "test": "pnpm -r --filter ./packages/* test",
-    "typecheck": "pnpm -r typecheck",
+    "build": "pnpm -r --filter './packages/*' run build",
+    "test": "pnpm -r --filter './packages/*' run test",
+    "typecheck": "pnpm -r run typecheck",
     "docs": "pnpm --filter mcjspacker2-docs dev",
     "docs:build": "pnpm --filter mcjspacker2-docs build"
   }

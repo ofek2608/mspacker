@@ -127,6 +127,17 @@ function Helper() {
 Functions that are never used and not marked aren't written. A function can call itself with
 `$.function(Self)`.
 
+A function you call with `$.function(...)` is written after the current function is finished, so
+it sees your variables as they are at the end:
+
+```ts
+let wave = 1;
+$.function(() => $.say(`wave ${wave}`));  // says "wave 2"
+wave = 2;
+```
+
+To give each call its own value, use a `const` or a `for (let ...)` loop variable.
+
 ## Functions without a name
 
 Functions written inline, like `() => { ... }`, get a generated name such as

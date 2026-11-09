@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    name: Unit tests (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [22, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm -r --filter './packages/*' run typecheck
+      - run: pnpm test
+
+  demo:
+    name: Demo and docs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      # The demo targets a 26.x snapshot, which runs on Java 25.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 25
+      # Server jars and datagen output.
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/mcjspacker2
+          key: demo-${{ hashFiles('examples/demo/mcjs2.config.ts') }}
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - name: Generate, type-check and build the demo
+        working-directory: examples/demo
+        run: |
+          pnpm run gen
+          pnpm run typecheck
+          pnpm run build
+      - run: pnpm docs:build

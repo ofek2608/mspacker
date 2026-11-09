@@ -9,21 +9,13 @@ description: The mcjs2 and create-mcjspacker2 commands.
 npm create mcjspacker2@latest [dir] -- [options]
 ```
 
-Sets up a new project interactively. See [getting started](/getting-started/#create-a-project) for
+Sets up a new project interactively, or adds mcjspacker2 to an existing one (`.` as the directory;
+existing files are kept). See [getting started](/getting-started/#create-a-project) for
 the options.
 
 ## `mcjs2`
 
 All commands take `--cwd <dir>` to run in another project directory.
-
-### `mcjs2 init`
-
-```sh
-mcjs2 init [--mc-version <id>] [--namespace <ns>]
-```
-
-Adds mcjspacker2 to the current directory: `mcjs2.config.ts`, the `#mc` import and scripts in
-`package.json`, `tsconfig.json`, `.gitignore` entries and `src/main.ts`. Existing files are kept.
 
 ### `mcjs2 gen`
 

@@ -14,10 +14,6 @@
     "./runtime": {
       "types": "./dist/runtime/index.d.ts",
       "default": "./dist/runtime/index.js"
-    },
-    "./create": {
-      "types": "./dist/create/index.d.ts",
-      "default": "./dist/create/index.js"
     }
   },
   "files": [
@@ -25,7 +21,7 @@
     "bin"
   ],
   "engines": {
-    "node": ">=20"
+    "node": ">=22.22"
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
@@ -34,7 +30,6 @@
   },
   "dependencies": {
     "@babel/parser": "^8.1.0",
-    "@clack/prompts": "^1.8.1",
     "cac": "^7.1.0",
     "chokidar": "^6.0.0",
     "esbuild": "^0.28.2",

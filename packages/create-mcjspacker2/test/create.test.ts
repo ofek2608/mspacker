@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { detectPackageManager, parseCreateArgs } from "../src/create/index.js";
-import { curatedVersions, type Manifest } from "../src/create/versions.js";
+import { detectPackageManager, parseCreateArgs, validateNamespace } from "../src/index.js";
+import { curatedVersions, type Manifest } from "../src/versions.js";
 
 const v = (id: string, type: string, releaseTime: string) => ({ id, type, releaseTime });
 
@@ -62,5 +62,18 @@ describe("create: args", () => {
   it("detects the package manager", () => {
     expect(detectPackageManager("pnpm/10.0.0 npm/? node/v24")).toBe("pnpm");
     expect(detectPackageManager("")).toBe("npm");
+  });
+});
+
+describe("validateNamespace", () => {
+  it("accepts namespaces with an optional folder prefix", () => {
+    expect(validateNamespace("mypack")).toBeUndefined();
+    expect(validateNamespace("my_pack.v2:some/folder/")).toBeUndefined();
+  });
+
+  it("rejects invalid characters", () => {
+    expect(validateNamespace("")).toBe("Required");
+    expect(validateNamespace("My Pack")).toMatch(/Only a-z/);
+    expect(validateNamespace("mypack:Bad")).toMatch(/"Bad"/);
   });
 });

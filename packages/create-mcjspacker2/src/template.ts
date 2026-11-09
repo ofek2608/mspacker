@@ -1,6 +1,5 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
-import { findConfig } from "./config.js";
 
 const TSCONFIG = {
   compilerOptions: {
@@ -20,7 +19,8 @@ const TSCONFIG = {
   include: ["src", ".mcjs2/gen", "mcjs2.config.ts"],
 };
 
-/** Scaffold a project: config, package.json `#mc` import, tsconfig, .gitignore, sample source. */
+const CONFIG_NAMES = ["mcjs2.config.ts", "mcjs2.config.mts", "mcjs2.config.js", "mcjs2.config.mjs"];
+
 export interface InitOptions {
   version?: string;
   namespace?: string;
@@ -28,10 +28,11 @@ export interface InitOptions {
   log: (s: string) => void;
 }
 
-/** Version of this package, used for the scaffolded dependency range. */
+/** Version of this package; mcjspacker2 and create-mcjspacker2 are released together. */
 const OWN_VERSION: string = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")).version;
 
-export function init(dir: string, opts: InitOptions): void {
+/** Scaffold a project: config, package.json `#mc` import, tsconfig, .gitignore, sample source. */
+export function scaffold(dir: string, opts: InitOptions): void {
   const ns = opts.namespace ?? basename(dir).toLowerCase().replace(/[^a-z0-9_.-]/g, "_");
   const write = (rel: string, content: string) => {
     const p = join(dir, rel);
@@ -44,7 +45,7 @@ export function init(dir: string, opts: InitOptions): void {
     opts.log(`create ${rel}`);
   };
 
-  if (!findConfig(dir)) {
+  if (!CONFIG_NAMES.some((n) => existsSync(join(dir, n)))) {
     write(
       "mcjs2.config.ts",
       `import { defineConfig } from "mcjspacker2";

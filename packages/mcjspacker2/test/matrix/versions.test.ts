@@ -52,7 +52,8 @@ const DEFAULT_VERSIONS = [
 const LOAD_ONLY: Record<string, string> = {
   "3D Shareware v1.34": "setblock hangs the server thread in this April Fools build",
 };
-const VERSIONS = process.env.MCJS2_MATRIX_VERSIONS?.split(",").map((v) => v.trim()) ?? DEFAULT_VERSIONS;
+const PICKED = (process.env.MCJS2_MATRIX_VERSIONS ?? "").split(",").map((v) => v.trim()).filter(Boolean);
+const VERSIONS = PICKED.length ? PICKED : DEFAULT_VERSIONS;
 const ENABLED = process.env.MCJS2_MATRIX === "1";
 const SERVER = process.env.MCJS2_MATRIX_SERVER !== "0";
 

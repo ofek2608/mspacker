@@ -39,12 +39,7 @@ npm run dev   # starts a server; every save rebuilds and reloads in game
 ```
 
 `npm create` asks for a directory, namespace and Minecraft version, then sets everything up. To add
-mcjspacker2 to an existing project instead:
-
-```sh
-npm install -D mcjspacker2 typescript
-npx mcjs2 init --mc-version 26.3 --namespace mypack
-```
+mcjspacker2 to an existing project, run `npm create mcjspacker2@latest .` in it.
 
 | Command | |
 |---|---|

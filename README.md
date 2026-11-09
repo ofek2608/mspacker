@@ -21,7 +21,7 @@ export function StartRound() {
 
 ### Create a project
 
-You need Node.js 20+ and Java.
+You need Node.js 22.22+ and Java.
 
 ```sh
 npm create mcjspacker2@latest

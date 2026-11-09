@@ -7,8 +7,7 @@ import { existsSync, mkdirSync, readdirSync } from "node:fs";
 import { basename, relative, resolve } from "node:path";
 import { styleText } from "node:util";
 import * as p from "@clack/prompts";
-import { init } from "../init.js";
-import { parseNamespace } from "../runtime/naming.js";
+import { scaffold } from "./template.js";
 import { allDatapackVersions, curatedVersions, fetchManifest, type Manifest } from "./versions.js";
 
 export interface CreateArgs {
@@ -36,12 +35,16 @@ function check<T>(v: T): Exclude<T, symbol> {
 
 const defaultNamespace = (dir: string) => basename(resolve(dir)).toLowerCase().replace(/[^a-z0-9_.-]+/g, "_") || "mypack";
 
-function validateNamespace(v: string | undefined): string | undefined {
+/** A namespace, optionally with a folder prefix (`mypack` or `mypack:some/folder`). */
+export function validateNamespace(v: string | undefined): string | undefined {
   if (!v) return "Required";
-  try {
-    parseNamespace(v);
-  } catch (e) {
-    return (e as Error).message;
+  const colon = v.indexOf(":");
+  const ns = colon < 0 ? v : v.slice(0, colon);
+  if (!/^[a-z0-9_.-]+$/.test(ns)) return `Only a-z, 0-9, _, . and - are allowed in "${ns}".`;
+  if (colon >= 0) {
+    for (const seg of v.slice(colon + 1).replace(/^\/+|\/+$/g, "").split("/").filter(Boolean)) {
+      if (!/^[a-z0-9_.-]+$/.test(seg)) return `Only a-z, 0-9, _, . and - are allowed in "${seg}".`;
+    }
   }
   return undefined;
 }
@@ -126,7 +129,7 @@ export async function create(args: CreateArgs): Promise<void> {
 
   mkdirSync(dir, { recursive: true });
   const created: string[] = [];
-  init(dir, { version, namespace, description: description || undefined, log: (s) => created.push(s) });
+  scaffold(dir, { version, namespace, description: description || undefined, log: (s) => created.push(s) });
   p.note(created.join("\n"), "Scaffolded");
 
   const pm = detectPackageManager();

@@ -5,19 +5,12 @@ import { generateLibrary } from "./codegen/emit.js";
 import { buildPack, formatBuildError } from "./build/build.js";
 import { writePackDir, writePackZip } from "./build/pack.js";
 import { dev } from "./dev/watch.js";
-import { init } from "./init.js";
 import { existsSync } from "node:fs";
 
 const log = (s: string) => console.log(`[mcjs2] ${s}`);
 const cli = cac("mcjs2");
 
 cli.option("--cwd <dir>", "Project directory", { default: process.cwd() });
-
-cli
-  .command("init", "Scaffold a project in the current directory")
-  .option("--mc-version <id>", "Minecraft version")
-  .option("--namespace <ns>", "Datapack namespace")
-  .action((o) => init(o.cwd, { version: o.mcVersion, namespace: o.namespace, log }));
 
 cli
   .command("gen", "Run datagen on the server jar (downloaded if not provided) and generate the typed command library")

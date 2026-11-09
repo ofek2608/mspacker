@@ -3,7 +3,7 @@
  * latest release and snapshot, the latest patch of every minor release since data packs (1.13),
  * every 1.21 game drop, then April Fools versions at the bottom.
  */
-import { VERSION_MANIFEST_URL } from "../env/download.js";
+const VERSION_MANIFEST_URL = "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json";
 
 export interface ManifestVersion {
   id: string;

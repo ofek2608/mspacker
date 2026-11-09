@@ -1,0 +1,58 @@
+name: Version matrix
+
+# Every supported Minecraft version on a real server (see CONTRIBUTING.md). Slow, so nightly and on demand.
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+    inputs:
+      versions:
+        description: "Comma-separated Minecraft versions (empty: all)"
+        required: false
+        default: ""
+
+jobs:
+  matrix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      # Every Java the tested versions need (Mojang's javaVersion.majorVersion). setup-java exports
+      # JAVA_HOME_<major>_X64 for each, which mcjs2 picks per version.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: |
+            8
+            16
+            17
+            21
+            25
+      # Server jars and datagen output (~2 GB for all versions).
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/mcjspacker2
+          key: matrix-${{ hashFiles('packages/mcjspacker2/test/matrix/versions.test.ts') }}
+          restore-keys: matrix-
+      - run: pnpm install --frozen-lockfile
+      - name: Run the version matrix
+        working-directory: packages/mcjspacker2
+        run: pnpm vitest run test/matrix
+        env:
+          MCJS2_MATRIX: "1"
+          MCJS2_MATRIX_VERSIONS: ${{ inputs.versions }}
+          MCJS2_MATRIX_CONCURRENCY: "4"
+      - name: Upload probe reports and server logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: matrix-reports
+          path: |
+            packages/mcjspacker2/.matrix/*/probe-report.json
+            packages/mcjspacker2/.matrix/*/server-output.log
+          if-no-files-found: ignore

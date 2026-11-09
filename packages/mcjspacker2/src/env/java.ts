@@ -34,17 +34,33 @@ export interface JavaOptions {
   minecraftRoot?: string;
   /** Launcher runtime component the game version needs (e.g. "jre-legacy", "java-runtime-delta"). */
   component?: string;
+  /** Java major version the game version needs (e.g. 21). */
+  majorVersion?: number;
+}
+
+/** `JAVA_HOME_<major>_<arch>`, as set by actions/setup-java and preinstalled on GitHub runners. */
+function javaHomeFor(major: number): string | null {
+  for (const [key, value] of Object.entries(process.env)) {
+    if (!value || !new RegExp(`^JAVA_HOME_${major}_[A-Z0-9]+$`).test(key)) continue;
+    const p = join(value, "bin", exe);
+    if (existsSync(p)) return p;
+  }
+  return null;
 }
 
 /**
  * Pick java: config, then the launcher runtime matching the version's component (the exact Java the
  * game itself runs on; only the Java runtime is taken from the launcher dir, never game jars),
- * then JAVA_HOME, then PATH.
+ * then `JAVA_HOME_<major>_<arch>` for the version's Java major, then JAVA_HOME, then PATH.
  */
 export function findJava(opts: JavaOptions): string {
   if (opts.configured) return opts.configured;
   if (opts.component) {
     const match = launcherJava(findMinecraftRoot(opts.minecraftRoot), opts.component);
+    if (match) return match;
+  }
+  if (opts.majorVersion) {
+    const match = javaHomeFor(opts.majorVersion);
     if (match) return match;
   }
   if (process.env.JAVA_HOME) {
@@ -58,12 +74,12 @@ export function findJava(opts: JavaOptions): string {
 }
 
 /** findJava for a specific Minecraft version, using Mojang's version JSON to know which runtime it needs. */
-export async function findJavaFor(version: string, opts: Omit<JavaOptions, "component">): Promise<string> {
-  let component: string | undefined;
+export async function findJavaFor(version: string, opts: Omit<JavaOptions, "component" | "majorVersion">): Promise<string> {
+  let javaVersion: { component?: string; majorVersion?: number } | undefined;
   try {
-    component = (await fetchVersionJson(version)).javaVersion?.component;
+    javaVersion = (await fetchVersionJson(version)).javaVersion;
   } catch {
     // Offline or unknown version: fall back to JAVA_HOME / PATH.
   }
-  return findJava({ ...opts, component });
+  return findJava({ ...opts, component: javaVersion?.component, majorVersion: javaVersion?.majorVersion });
 }

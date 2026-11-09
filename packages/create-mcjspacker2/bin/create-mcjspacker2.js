@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { create, parseCreateArgs } from "mcjspacker2/create";
+import { create, parseCreateArgs } from "../dist/index.js";
 
 try {
   await create(parseCreateArgs(process.argv.slice(2)));
