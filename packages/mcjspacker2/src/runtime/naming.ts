@@ -6,7 +6,9 @@
  *   "mypack:generated"  == "mypack:generated/"  -> { ns: "mypack", prefix: "generated/" }
  */
 
+/** A config namespace, split up (see `parseNamespace`). */
 export interface NamespaceSpec {
+  /** The namespace, e.g. `mypack`. */
   ns: string;
   /** Path prefix; empty or ending with "/". */
   prefix: string;
@@ -15,6 +17,7 @@ export interface NamespaceSpec {
 const NS_RE = /^[a-z0-9_.-]+$/;
 const SEGMENT_RE = /^[a-z0-9_.-]+$/;
 
+/** Split a config namespace (`mypack:generated/`) into the namespace and the folder for function names. */
 export function parseNamespace(input: string): NamespaceSpec {
   const colon = input.indexOf(":");
   const ns = colon < 0 ? input : input.slice(0, colon);

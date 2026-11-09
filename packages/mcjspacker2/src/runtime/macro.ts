@@ -18,6 +18,7 @@ declare const FITS: unique symbol;
  * where commands take a boolean). To put it into text, use `` macro`...` ``.
  */
 export interface MacroArg<T> {
+  /** @internal The type it fits (only for TypeScript). */
   readonly [FITS]: T;
   /** The argument in double quotes, for string values inside NBT: `"$(name)"`. */
   readonly quoted: MacroArg<T>;

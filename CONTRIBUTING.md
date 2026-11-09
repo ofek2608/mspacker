@@ -103,5 +103,9 @@ codegen or the runtime; it's the only check that the output is valid Minecraft.
 ## Conventions
 
 - TypeScript is strict (`tsconfig.base.json`) minus options that make code harder to read.
+- Everything users import (`#mc` and `mcjspacker2`) has a doc comment: the docs' API reference is
+  generated from them by TypeDoc (`starlight-typedoc`) on every docs build. Mark helpers that only
+  generated code uses with `@internal`. TypeDoc needs TypeScript's JS API, so the docs package has
+  its own TypeScript 6 just for that.
 - The docs are for beginners: no internals (literals, parsers, nodes) outside the advanced page.
   Every code example in them should build; check new ones against the demo.

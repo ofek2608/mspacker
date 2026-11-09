@@ -5,6 +5,7 @@ import { build } from "esbuild";
 import { parseNamespace, type NamespaceSpec } from "./runtime/naming.js";
 import type { UserParserDef } from "./runtime/parsers.js";
 
+/** The settings in `mcjs2.config.ts`. Only `version` and `namespace` are required. */
 export interface UserConfig {
   /** Minecraft version id, must match the server jar (e.g. "26.3" or "26.3-snapshot-1"). */
   version: string;
@@ -12,6 +13,7 @@ export interface UserConfig {
   namespace: string;
   /** Pack folder name. Defaults to the package name / project dir. */
   name?: string;
+  /** The pack description in `pack.mcmeta`. */
   description?: string;
   /** TS source dir. Default "src". */
   src?: string;
@@ -19,6 +21,7 @@ export interface UserConfig {
   raw?: string;
   /** Build output dir. Default "dist". */
   outDir?: string;
+  /** The dev server (`mcjs2 dev`). */
   server?: {
     /**
      * Server dir used by `dev` (world + datapacks). Overridden by MCJS2_SERVER_DIR. Default "server".
@@ -47,6 +50,11 @@ export interface UserConfig {
   minecraftRoot?: string;
 }
 
+/**
+ * Your project's settings; `mcjs2.config.ts` exports the result:
+ *
+ *     export default defineConfig({ version: "26.3", namespace: "mypack" });
+ */
 export function defineConfig(config: UserConfig): UserConfig {
   return config;
 }

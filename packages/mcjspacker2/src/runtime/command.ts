@@ -16,7 +16,10 @@ import { parserDef } from "./parsers.js";
 import { collectMacros, isMacroArg, isVerbatimMacro, MacroError } from "./macro.js";
 import { beginCommand, emitLine, getState, type CommandEntry } from "./state.js";
 
-/** Compact command tree node (generated from commands.json). */
+/**
+ * Compact command tree node (generated from commands.json).
+ * @internal
+ */
 export interface TreeNode {
   /** literal */
   l?: 1;
@@ -84,6 +87,7 @@ export const RESERVED_LITERALS: Record<string, string> = { then: "then_", constr
  * agree (`keepInventory` and `minecraft:keep_inventory` are both `keep_inventory`, `ban-ip` is
  * `ban_ip`). JS keywords are fine as property names (`$.function`, `$.execute.if`). Null if the
  * literal isn't identifier-like (`<`, `*`): those are only reachable by their exact key.
+ * @internal
  */
 export function literalName(literal: string): string | null {
   const name = literal
@@ -188,7 +192,10 @@ function currentBuffer(): unknown {
   return s.stack[s.stack.length - 1];
 }
 
-/** Create the `$` root for a command tree. */
+/**
+ * Create the `$` root for a command tree (used by the generated library).
+ * @internal
+ */
 export function createRoot(root: TreeNode): unknown {
   const atRoot = (st: ChainState) => st.cands.every((c) => !c.done && continuation(root, c.node) === root);
 

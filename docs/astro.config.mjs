@@ -1,11 +1,22 @@
 import { defineConfig } from "astro/config";
 import starlight from "@astrojs/starlight";
+import starlightTypeDoc, { typeDocSidebarGroup } from "starlight-typedoc";
 
 export default defineConfig({
   integrations: [
     starlight({
       title: "mcjspacker2",
       description: "Write Minecraft data packs in TypeScript, with a command library generated from the game itself.",
+      plugins: [
+        // API reference, generated from the doc comments in the code on every docs build.
+        starlightTypeDoc({
+          entryPoints: ["../packages/mcjspacker2/src/runtime/index.ts", "../packages/mcjspacker2/src/index.ts"],
+          tsconfig: "../packages/mcjspacker2/tsconfig.build.json",
+          output: "reference/api",
+          sidebar: { label: "API", collapsed: true },
+          typeDoc: { excludeInternal: true, excludePrivate: true, disableSources: true, readme: "none", sort: ["kind", "alphabetical"] },
+        }),
+      ],
       sidebar: [
         {
           label: "Start here",
@@ -33,6 +44,7 @@ export default defineConfig({
             "reference/custom-parsers",
           ],
         },
+        typeDocSidebarGroup,
       ],
     }),
   ],

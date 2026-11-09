@@ -112,7 +112,7 @@ npx mcjs2 build --zip  # also a .zip
 
 The full guide is the documentation site in [`docs/`](docs). Run it with `pnpm docs` from the
 repository root. It covers commands, `execute`, function names, tags and data files, dev mode,
-configuration and supported versions.
+configuration and supported versions, plus an API reference generated from the code.
 
 ## Packages
 

@@ -18,8 +18,10 @@ import { snbt, quoteString, type NbtValue } from "./nbt.js";
 import { fnId } from "./state.js";
 import { hasMacroArg } from "./macro.js";
 
+/** An argument type's settings from `commands.json` (like `{ type: "players" }` for entities). */
 export type Props = Record<string, unknown> | undefined;
 
+/** What argument types know about the version being built. */
 export interface ParserContext {
   /** Minecraft version id, e.g. "1.21.4". */
   version: string;
@@ -31,21 +33,31 @@ export interface ParserContext {
   registryIds(registry: string): string[];
 }
 
+/** A command argument type: how it's typed in TypeScript, recognized and written. */
 export interface ParserDef {
+  /** The TypeScript type in generated signatures, e.g. `"Selector"`. */
   type(props: Props, ctx: ParserContext): string;
+  /** Whether a value fits this argument (picks between arguments at the same place). */
   test(value: unknown, props: Props, ctx: ParserContext): boolean;
+  /** The command text for a value. Throw to reject it with a message. */
   serialize(value: unknown, props: Props, ctx: ParserContext): string;
   /** How a macro argument (`text` is `$(name)`) is written; as-is when missing. */
   macro?(text: string, props: Props, ctx: ParserContext): string;
+  /** Sample values for the version matrix's parser probe. */
   examples?(props: Props, ctx: ParserContext): unknown[];
 }
 
 /** User-facing parser definition: every field optional; `type` may be a plain string. */
 export interface UserParserDef {
+  /** The TypeScript type in generated signatures (re-run `mcjs2 gen` after changing it). */
   type?: string | ((props: Props, ctx: ParserContext) => string);
+  /** Whether a value fits this argument. */
   test?(value: unknown, props: Props, ctx: ParserContext): boolean;
+  /** The command text for a value. */
   serialize?(value: unknown, props: Props, ctx: ParserContext): string;
+  /** How a macro argument (`text` is `$(name)`) is written; as-is when missing. */
   macro?(text: string, props: Props, ctx: ParserContext): string;
+  /** Sample values for the version matrix's parser probe. */
   examples?: unknown[] | ((props: Props, ctx: ParserContext) => unknown[]);
 }
 
@@ -250,6 +262,7 @@ const loose = (type: string, examples: unknown[]): ParserDef => ({
 
 // ---------------------------------------------------------------- registry
 
+/** The built-in argument types, by parser id (`minecraft:vec3`, `brigadier:integer`, ...). */
 export const PARSERS: Record<string, ParserDef> = {
   "brigadier:bool": { type: () => "boolean", test: (v) => typeof v === "boolean", serialize: String, examples: () => [true] },
   "brigadier:integer": numberDef(true),

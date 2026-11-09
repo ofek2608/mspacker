@@ -1,8 +1,12 @@
 /**
- * Runtime imported by user code (through the generated `#mc` library).
+ * Everything you import from `#mc` besides the commands: helpers for tags, files, function names,
+ * macros and NBT, and the types of command arguments.
  *
- * Lowercase helpers avoid clashing with generated PascalCase commands (`Tag` is the `/tag` command,
- * `tag` registers a datapack tag).
+ * `#mc` also exports what `mcjs2 gen` generates for your Minecraft version: `$` (every command),
+ * `MINECRAFT_VERSION`, and the registry id types (`Id<"item">`, ...).
+ *
+ * @packageDocumentation
+ * @module Library (#mc)
  */
 import { addResource, addTag, devFlag, fnId as functionId, packInfo } from "./state.js";
 import type { FnRef } from "./types.js";
@@ -15,7 +19,7 @@ function noMacros(value: unknown, what: string): void {
 
 export * from "./types.js";
 export { macro, type Macro, type MacroArg, type MacroValue } from "./macro.js";
-export { nbt, snbt } from "./nbt.js";
+export { nbt, snbt, type RawSnbt, type Suffix, type TypedArray, type TypedNumber } from "./nbt.js";
 export { createRoot, literalName, type TreeNode } from "./command.js";
 
 /**
