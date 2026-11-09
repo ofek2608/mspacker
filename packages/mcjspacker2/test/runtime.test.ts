@@ -512,3 +512,21 @@ describe("fnId", () => {
     expect(files["data/pk/function/gen/a/b/helper.mcfunction"]).toBe("say h\n");
   });
 });
+
+describe("function property names as values", () => {
+  it("explain how to write them", () => {
+    function Main() {
+      $.scoreboard.players.set("@s").name(5);
+    }
+    meta(Main, { file: "main.ts", name: "Main", mcfunction: true });
+    expect(() => build()).toThrow(/"name" can't be written as a property after "scoreboard players set @s".*Use parentheses instead: \("name"\)/);
+  });
+
+  it("work in parentheses", () => {
+    function Main() {
+      $.scoreboard.players.set("@s")("name", 5);
+    }
+    meta(Main, { file: "main.ts", name: "Main", mcfunction: true });
+    expect(build()["data/pk/function/gen/main/main.mcfunction"]).toBe("scoreboard players set @s name 5\n");
+  });
+});

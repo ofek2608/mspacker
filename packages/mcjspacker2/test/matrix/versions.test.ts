@@ -15,7 +15,7 @@ import { copyFileSync, mkdirSync, readdirSync, readFileSync, rmSync, symlinkSync
 import { join, resolve } from "node:path";
 import { createServer as createNetServer, type Server as NetServer } from "node:net";
 import { afterAll, describe, expect, it } from "vitest";
-import { buildPack, type GenMeta } from "../../src/build/build.js";
+import type { GenMeta } from "../../src/build/build.js";
 import { writePackDir } from "../../src/build/pack.js";
 import { generate } from "../../src/codegen/generate.js";
 import { buildProbes, probeFiles, probeResults } from "../../src/codegen/probe.js";
@@ -57,6 +57,13 @@ const ENABLED = process.env.MCJS2_MATRIX === "1";
 const SERVER = process.env.MCJS2_MATRIX_SERVER !== "0";
 
 const PKG = resolve(import.meta.dirname, "../..");
+
+// Builds run the user's code in a worker thread, which loads the compiled package, so test against dist.
+if (ENABLED) execFileSync(join(PKG, "node_modules/.bin/tsc"), ["-p", join(PKG, "tsconfig.build.json")], { stdio: "inherit" });
+type BuildModule = typeof import("../../src/build/build.js");
+const buildPack: BuildModule["buildPack"] = ENABLED
+  ? ((await import(join(PKG, "dist/build/build.js"))) as BuildModule).buildPack
+  : () => Promise.reject(new Error("matrix disabled"));
 const ROOT = join(PKG, ".matrix");
 /**
  * Versions run concurrently (MCJS2_MATRIX_CONCURRENCY, default 6, set in vitest.config.ts).
@@ -264,7 +271,11 @@ matrix.each(VERSIONS)("Minecraft %s", (version) => {
         for (const [fn, res] of Object.entries(results)) {
           expect(res, `${fn} on ${version}`).not.toMatch(/Unknown function|Unknown or incomplete|Can't find|error/i);
         }
-        if (!LOAD_ONLY[version]) expect(output.text, "commands function ran to the end").toContain("mcjs2-commands-ok");
+        if (!LOAD_ONLY[version]) {
+          // The server can log a function's output after answering the RCON command that ran it.
+          await waitFor(child, /mcjs2-commands-ok/, 30_000, output).catch(() => {});
+          expect(output.text, "commands function ran to the end").toContain("mcjs2-commands-ok");
+        }
         expect(failed.map((f) => `${f.probe.line} -> ${f.error}`), `parser probes on ${version}`).toEqual([]);
         await rcon.command("stop");
       } finally {

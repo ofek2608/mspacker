@@ -4,7 +4,8 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { watch } from "chokidar";
 import { loadConfig, type ResolvedConfig } from "../config.js";
-import { buildPack } from "../build/build.js";
+import { buildPack, formatBuildError, type GenMeta } from "../build/build.js";
+import { generateLibrary } from "../codegen/emit.js";
 import { writePackDir } from "../build/pack.js";
 import { findJavaFor } from "../env/java.js";
 import { requireMinecraftRoot } from "../env/mcroot.js";
@@ -25,6 +26,8 @@ interface Target {
   /** Directory to write the pack into (resolved per build so `auto` follows the open world). */
   packDir(cfg: ResolvedConfig): string;
   reload(): Promise<void>;
+  /** `version` changed in the config while dev was running. */
+  versionChanged(cfg: ResolvedConfig, from: string): Promise<void>;
   close(): void;
 }
 
@@ -39,6 +42,7 @@ function saveTarget(cfg: ResolvedConfig, save: string, log: (s: string) => void)
       return join(s.dir, "datapacks", c.name);
     },
     reload: async () => log("Pack updated. Run /reload in game."),
+    versionChanged: async (c) => log(`Open the world in Minecraft ${c.version} to use the new version.`),
     close: () => {},
   };
 }
@@ -122,6 +126,19 @@ async function serverTarget(cfg: ResolvedConfig, opts: DevOptions): Promise<Targ
         opts.log(`Pack updated, but RCON reload failed (${(e as Error).message}). Is the server running?`);
       }
     },
+    versionChanged: async (c, from) => {
+      try {
+        // Swaps the jar if mcjs2 installed it (a jar you put there yourself is never replaced).
+        await resolveServer(c.projectDir, c.version, c.server, { log: opts.log, forDev: true });
+      } catch (e) {
+        opts.log(`warning: couldn't set up the Minecraft ${c.version} server jar: ${(e as Error).message}`);
+      }
+      opts.log(
+        child
+          ? `The server is still running Minecraft ${from}. To play on ${c.version}, type \`stop\` in the server console, then run \`mcjs2 dev --start\` again.`
+          : `If the server is running, restart it to play on Minecraft ${c.version}.`,
+      );
+    },
     close: () => {
       rcon?.close();
       child?.kill();
@@ -137,6 +154,10 @@ export async function dev(projectDir: string, opts: DevOptions): Promise<void> {
   let running = false;
   let queued = false;
   let reloadConfig = false;
+  // The version the generated commands are for; regenerated when the config's version changes.
+  let libVersion = generatedVersion(cfg);
+  // Our own regeneration writes .mcjs2/gen, which shouldn't trigger another rebuild.
+  let generatedAt = 0;
   const run = async () => {
     if (running) {
       queued = true;
@@ -148,6 +169,14 @@ export async function dev(projectDir: string, opts: DevOptions): Promise<void> {
         cfg = await loadConfig(projectDir);
         reloadConfig = false;
       }
+      if (cfg.version !== libVersion) {
+        const from = libVersion;
+        if (from) opts.log(`Minecraft version changed from ${from} to ${cfg.version}; regenerating commands...`);
+        await generateLibrary(cfg, { log: opts.log });
+        generatedAt = Date.now();
+        libVersion = cfg.version;
+        if (from) await target.versionChanged(cfg, from);
+      }
       const t0 = Date.now();
       const { files, functionCount, warnings } = await buildPack(cfg, { dev: true });
       for (const w of warnings) opts.log(`warning: ${w}`);
@@ -156,9 +185,7 @@ export async function dev(projectDir: string, opts: DevOptions): Promise<void> {
       opts.log(`Built ${functionCount} functions -> ${dir} (${Date.now() - t0} ms)`);
       await target.reload();
     } catch (e) {
-      // esbuild errors are already formatted; for user code errors the (source-mapped) stack is useful.
-      const err = e as Error & { errors?: unknown[] };
-      opts.log(`Build failed, keeping the previous pack:\n${err.errors ? err.message : (err.stack ?? err)}`);
+      opts.log(`Build failed, keeping the previous pack:\n${formatBuildError(e)}`);
     } finally {
       running = false;
       if (queued) {
@@ -172,6 +199,7 @@ export async function dev(projectDir: string, opts: DevOptions): Promise<void> {
   let timer: NodeJS.Timeout | undefined;
   const watcher = watch([cfg.srcDir, cfg.rawDir, cfg.configFile, cfg.genDir], { ignoreInitial: true });
   watcher.on("all", (_event, path) => {
+    if (path.startsWith(cfg.genDir) && Date.now() - generatedAt < 2000) return;
     if (path === cfg.configFile) reloadConfig = true;
     clearTimeout(timer);
     timer = setTimeout(run, 150);
@@ -184,4 +212,10 @@ export async function dev(projectDir: string, opts: DevOptions): Promise<void> {
   };
   process.on("SIGINT", stop);
   process.on("SIGTERM", stop);
+}
+
+/** The version `.mcjs2/gen` was generated for, or null if it hasn't been generated. */
+function generatedVersion(cfg: ResolvedConfig): string | null {
+  const file = join(cfg.genDir, "meta.json");
+  return existsSync(file) ? (JSON.parse(readFileSync(file, "utf8")) as GenMeta).version : null;
 }

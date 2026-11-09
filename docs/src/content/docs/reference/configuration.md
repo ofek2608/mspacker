@@ -89,3 +89,4 @@ Advanced: describe values a new Minecraft version added or changed. See
 | `MCJS2_SERVER_DIR` | Overrides `server.dir`. |
 | `MINECRAFT_ROOT` | Overrides `minecraftRoot`. |
 | `JAVA_HOME` | Java to use when `java` isn't set. |
+| `MCJS2_DEBUG` | Set to `1` to show full stack traces for build errors. |

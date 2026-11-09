@@ -1,6 +1,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import { pathToFileURL } from "node:url";
+import { Worker } from "node:worker_threads";
 import { build as esbuild, type Plugin } from "esbuild";
 import type { ResolvedConfig } from "../config.js";
 import { collectOutput, resetState } from "../runtime/state.js";
@@ -89,9 +90,14 @@ export function readGenMeta(cfg: ResolvedConfig): GenMeta {
 }
 
 /** Bundle the user's sources, execute them at build time, and return the datapack files. */
+export interface BuildOptions {
+  /** Dev build: `__DEV__` is true and `@dev` functions are included. */
+  dev?: boolean;
+}
+
 export async function buildPack(
   cfg: ResolvedConfig,
-  options: { dev?: boolean } = {},
+  options: BuildOptions = {},
 ): Promise<{ files: PackFiles; functionCount: number; warnings: string[] }> {
   const meta = readGenMeta(cfg);
   const sources = listSources(cfg.srcDir);
@@ -110,16 +116,67 @@ export async function buildPack(
     plugins: [externalPackages, instrumentPlugin(cfg.srcDir)],
   });
 
+  // The user's code runs in a short-lived worker: each build loads a new copy of the bundle, and Node
+  // never unloads modules, so running it in-process would grow memory with every dev rebuild.
+  const out = await runInWorker({ projectDir: cfg.projectDir, outfile, dev: options.dev ?? false });
+  const { files, warnings } = assemblePack(cfg, meta, out.files);
+  return { files, functionCount: out.functionCount, warnings };
+}
+
+/** Run the bundled user code and collect the pack's generated files (inside the build worker). */
+export async function executeBundle(
+  cfg: ResolvedConfig,
+  meta: GenMeta,
+  outfile: string,
+  dev: boolean,
+): Promise<{ files: Map<string, string>; functionCount: number }> {
   setParserOverrides(cfg.parsers);
-  resetState(cfg.spec, { version: meta.version, packFormat: meta.packFormat[0] }, { dev: options.dev });
+  resetState(cfg.spec, { version: meta.version, packFormat: meta.packFormat[0] }, { dev });
   process.setSourceMapsEnabled?.(true);
-  let out: ReturnType<typeof collectOutput>;
   try {
     await import(pathToFileURL(outfile).href + `?v=${++buildCounter}-${Date.now()}`);
-    out = collectOutput({ packFormat: meta.packFormat[0] });
+    return collectOutput({ packFormat: meta.packFormat[0] });
   } catch (e) {
     throw withSourceLocation(e, cfg.srcDir);
   }
-  const { files, warnings } = assemblePack(cfg, meta, out.files);
-  return { files, functionCount: out.functionCount, warnings };
+}
+
+export interface WorkerInput {
+  projectDir: string;
+  outfile: string;
+  dev: boolean;
+}
+
+export type WorkerResult =
+  | { ok: true; files: [string, string][]; functionCount: number }
+  | { ok: false; message: string; stack?: string };
+
+function runInWorker(input: WorkerInput): Promise<{ files: Map<string, string>; functionCount: number }> {
+  return new Promise((resolveP, reject) => {
+    const worker = new Worker(new URL("./worker.js", import.meta.url), {
+      workerData: input,
+      // Don't inherit the CLI's node flags: some (`--input-type`, `--expose-gc`) are invalid in workers.
+      execArgv: [],
+    });
+    let settled = false;
+    worker.once("message", (r: WorkerResult) => {
+      settled = true;
+      void worker.terminate();
+      if (r.ok) resolveP({ files: new Map(r.files), functionCount: r.functionCount });
+      else reject(Object.assign(new Error(r.message), { stack: r.stack ?? r.message }));
+    });
+    worker.once("error", (e) => {
+      settled = true;
+      reject(e);
+    });
+    worker.once("exit", (code) => {
+      if (!settled) reject(new Error(`Build worker exited unexpectedly (code ${code}).`));
+    });
+  });
+}
+
+/** How build errors are shown: the message (with its source location); the full stack with MCJS2_DEBUG=1. */
+export function formatBuildError(e: unknown): string {
+  if (!(e instanceof Error)) return String(e);
+  return process.env.MCJS2_DEBUG ? (e.stack ?? e.message) : e.message;
 }

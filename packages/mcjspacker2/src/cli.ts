@@ -2,7 +2,7 @@ import { join } from "node:path";
 import { cac } from "cac";
 import { loadConfig } from "./config.js";
 import { generateLibrary } from "./codegen/emit.js";
-import { buildPack } from "./build/build.js";
+import { buildPack, formatBuildError } from "./build/build.js";
 import { writePackDir, writePackZip } from "./build/pack.js";
 import { dev } from "./dev/watch.js";
 import { init } from "./init.js";
@@ -64,6 +64,6 @@ try {
   if (!cli.matchedCommand) cli.outputHelp();
   else await cli.runMatchedCommand();
 } catch (e) {
-  console.error(`[mcjs2] ${(e as Error).message}`);
+  console.error(`[mcjs2] ${formatBuildError(e)}`);
   process.exit(1);
 }

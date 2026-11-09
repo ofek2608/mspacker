@@ -97,13 +97,34 @@ export function literalName(literal: string): string | null {
 /**
  * Properties that JavaScript, Node and test tools read on any value (`await` checks `then`,
  * `console.log` and `JSON.stringify` probe others). They fall through instead of being reported
- * as unknown subcommands.
+ * as unknown subcommands, and are never taken as values.
  */
 const PROBED = new Set([
   "then", "catch", "finally", "toJSON", "toString", "valueOf", "toLocaleString", "constructor", "inspect",
-  "asymmetricMatch", "nodeType", "$$typeof", "__proto__", "prototype", "length", "name", "caller", "arguments",
-  "call", "apply", "bind", "hasOwnProperty", "isPrototypeOf", "propertyIsEnumerable",
+  "asymmetricMatch", "nodeType", "$$typeof", "__proto__", "hasOwnProperty", "isPrototypeOf", "propertyIsEnumerable",
 ]);
+
+/** Properties every JavaScript function has. As values they need parentheses: `("name")`. */
+export const FUNCTION_PROPS = ["name", "length", "prototype", "caller", "arguments", "call", "apply", "bind"] as const;
+const FUNCTION_PROP_SET = new Set<string>(FUNCTION_PROPS);
+
+/** What `.name` returns where a value is expected: fails with a clear message when used as a command. */
+function functionPropStub(prop: string, where: string): unknown {
+  const fail = () => {
+    throw new Error(
+      `"${prop}" can't be written as a property ${where}, because every JavaScript function has a "${prop}" ` +
+        `property. Use parentheses instead: ("${prop}").`,
+    );
+  };
+  return new Proxy(function stub() {}, {
+    apply: fail,
+    get(target, p) {
+      if (p === Symbol.toPrimitive || p === "toString") return () => prop; // tools printing it
+      if (typeof p === "symbol" || PROBED.has(p)) return Reflect.get(target, p);
+      return fail();
+    },
+  });
+}
 
 const literalIndex = new WeakMap<TreeNode, Map<string, string>>();
 
@@ -220,6 +241,11 @@ export function createRoot(root: TreeNode): unknown {
         }
         // Names tools probe (`then`, `toJSON`, ...) are never argument values, or every chain would be a thenable.
         if (PROBED.has(prop)) return cands.length ? proxyFor(advance(st, cands)) : Reflect.get(target, prop, receiver);
+        if (FUNCTION_PROP_SET.has(prop) && !cands.length) {
+          // `.name` where a value fits: explain instead of returning the function's own `name`.
+          if (consumeArg(st.cands, prop).next.length) return functionPropStub(prop, `after "${text(st.cands[0]!)}"`);
+          return Reflect.get(target, prop, receiver);
+        }
         const { next, error } = consumeArg(st.cands, prop);
         cands.push(...next);
         if (cands.length) return proxyFor(advance(st, cands));

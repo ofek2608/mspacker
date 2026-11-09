@@ -4,7 +4,7 @@
  * Emits `$`, typed with one interface per command tree node: literal children are properties,
  * runs of argument children are call signatures, and redirects reuse their target's interface.
  */
-import { continuation, literalName, type TreeNode } from "../runtime/command.js";
+import { continuation, FUNCTION_PROPS, literalName, type TreeNode } from "../runtime/command.js";
 import { camel } from "../runtime/naming.js";
 import { isKnownParser, parserDef, type ParserContext } from "../runtime/parsers.js";
 
@@ -185,6 +185,13 @@ export function generate(
       .filter(([, child]) => !child.l)
       .map(([key, child]) => `PropArg<${argType(child)}, ${typeOf(child, join(syntax, `<${key}>`))}>`);
     if (!propArgs.length) return `${doc}interface ${name} {\n${lines.join("\n")}\n}`;
+    // Values can't be written as `.name` etc. (see FunctionProps), except where that word is a real literal.
+    const literalFnProps = FUNCTION_PROPS.filter((p) => node.c?.[p]?.l);
+    propArgs.push(
+      literalFnProps.length
+        ? `Pick<FunctionProps, Exclude<keyof FunctionProps, ${literalFnProps.map((p) => JSON.stringify(p)).join(" | ")}>>`
+        : "FunctionProps",
+    );
     return (
       `interface ${name}$ {\n${lines.join("\n")}\n}\n` +
       `${doc}type ${name} = ${name}$ & ${[...new Set(propArgs)].join(" & ")};`
@@ -211,6 +218,12 @@ export function generate(
     "\n\n" +
     "/** A string argument written as a property: `.red` for `(\"red\")`. */\n" +
     "type PropArg<T, Next> = { readonly [K in Extract<T, string>]: Next };\n\n" +
+    "/** Names every JavaScript function has, so they can't be values written as properties. */\n" +
+    "interface FunctionProps {\n" +
+    FUNCTION_PROPS.map(
+      (p) => `  /** @deprecated \"${p}\" is a JavaScript function property. Write the value in parentheses: (\"${p}\"). */\n  readonly ${p}: never;\n`,
+    ).join("") +
+    "}\n\n" +
     "/**\n" +
     " * Every command: words are properties, values are calls.\n" +
     " *\n" +

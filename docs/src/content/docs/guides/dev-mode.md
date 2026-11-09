@@ -13,6 +13,10 @@ the dev server's world, at `<server dir>/<level-name>/datapacks/<name>`, and sen
 server over RCON. If a build fails, the error is printed with its source location and the previous
 pack stays in place.
 
+If you change `version` in the config while dev is running, it regenerates the commands for the
+new version and swaps the server jar (if mcjspacker2 downloaded it). Restart the server to play on
+the new version.
+
 Dev builds set [`__DEV__`](/guides/writing-functions/#debug-only-commands) to `true` and include
 [`@dev` functions](/guides/writing-functions/#debug-only-functions), so you can add commands and
 functions that only exist while developing.
