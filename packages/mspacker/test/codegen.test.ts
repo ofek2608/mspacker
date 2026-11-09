@@ -137,9 +137,9 @@ export function WithArgs(args: Macro<"who" | "n" | "name" | "pos">) {
           include: ["use.ts", "gen"],
         }),
       );
-      const tsc = resolve("node_modules/.bin/tsc");
+      const tsc = resolve("node_modules/typescript/bin/tsc");
       try {
-        execFileSync(tsc, ["-p", dir], { encoding: "utf8", stdio: "pipe" });
+        execFileSync(process.execPath, [tsc, "-p", dir], { encoding: "utf8", stdio: "pipe" });
       } catch (e) {
         throw new Error(`tsc failed:\n${(e as { stdout?: string }).stdout}`);
       }
