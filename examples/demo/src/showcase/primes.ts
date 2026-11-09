@@ -29,8 +29,8 @@ function spiral(): [number, number][] {
 }
 
 /** Mark index `showcase.mark.i` of the sieve as composite. */
-function Unmark(args: Macro<"i">) {
-  $.data.modify.storage(STORAGE, macro`showcase.sieve[${args.i}]`).set.value(0);
+function Unmark({ i }: Macro) {
+  $.data.modify.storage(STORAGE, macro`showcase.sieve[${i}]`).set.value(0);
 }
 
 export function buildPrimes() {

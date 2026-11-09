@@ -8,9 +8,9 @@ import { Gcd } from "./numbers.js";
  * n!
  * @mcfunction
  */
-export function Factorial(args: Macro<"n">) {
+export function Factorial({ n }: Macro) {
   setInt("comb.r", 1);
-  forLoop("i", add(args.n, 1), {}, (a) => setInt("comb.r", mul(stored("comb.r"), a.i)), 1);
+  forLoop("i", add(n, 1), {}, (a) => setInt("comb.r", mul(stored("comb.r"), a.i)), 1);
   returnInt(stored("comb.r"));
 }
 
@@ -18,15 +18,15 @@ export function Factorial(args: Macro<"n">) {
  * C(n, k): ways to choose k of n. Multiplies and divides step by step, so every value stays exact.
  * @mcfunction
  */
-export function Choose(args: Macro<"n" | "k">) {
-  onlyIf(intIn(args.k, { max: -1 })).run.return(0);
-  onlyIf(intIn(sub(args.n, args.k), { max: -1 })).run.return(0);
+export function Choose({ n, k }: Macro) {
+  onlyIf(intIn(k, { max: -1 })).run.return(0);
+  onlyIf(intIn(sub(n, k), { max: -1 })).run.return(0);
   // C(n, k) = C(n, n - k): use the smaller one.
-  setInt("comb.k", min(args.k, sub(args.n, args.k)));
+  setInt("comb.k", min(k, sub(n, k)));
   setInt("comb.r", 1);
   // r = r · (n - k + i) / i for i = 1..k. r · (n - k + i) alone can overflow even when the result
   // fits, so divide first: with g = gcd(r, i), r / g and (n - k + i) / (i / g) are both exact.
-  forLoop("i", add(stored("comb.k"), 1), { n: args.n }, (a) => {
+  forLoop("i", add(stored("comb.k"), 1), { n: n }, (a) => {
     $.data.modify.storage(STORAGE, "comb.gcd").set.value({ a: 0, b: a.i });
     $.data.modify.storage(STORAGE, "comb.gcd.a").set.from.storage(STORAGE, "comb.r");
     $.execute.store.result.score("#g", OBJECTIVE).run.function(Gcd).with.storage(STORAGE, "comb.gcd");
@@ -39,11 +39,11 @@ export function Choose(args: Macro<"n" | "k">) {
  * P(n, k) = n! / (n - k)!: ordered ways to pick k of n.
  * @mcfunction
  */
-export function Permutations(args: Macro<"n" | "k">) {
-  onlyIf(intIn(args.k, { max: -1 })).run.return(0);
-  onlyIf(intIn(sub(args.n, args.k), { max: -1 })).run.return(0);
+export function Permutations({ n, k }: Macro) {
+  onlyIf(intIn(k, { max: -1 })).run.return(0);
+  onlyIf(intIn(sub(n, k), { max: -1 })).run.return(0);
   setInt("comb.r", 1);
-  forLoop("i", add(args.n, 1), {}, (a) => setInt("comb.r", mul(stored("comb.r"), a.i)), add(sub(args.n, args.k), 1));
+  forLoop("i", add(n, 1), {}, (a) => setInt("comb.r", mul(stored("comb.r"), a.i)), add(sub(n, k), 1));
   returnInt(stored("comb.r"));
 }
 
@@ -51,22 +51,22 @@ export function Permutations(args: Macro<"n" | "k">) {
  * The n-th Catalan number, C(2n, n) / (n + 1).
  * @mcfunction
  */
-export function Catalan(args: Macro<"n">) {
-  $.data.modify.storage(STORAGE, "comb.call").set.value({ n: 0, k: args.n });
-  setInt("comb.call.n", mul(args.n, 2));
+export function Catalan({ n }: Macro) {
+  $.data.modify.storage(STORAGE, "comb.call").set.value({ n: 0, k: n });
+  setInt("comb.call.n", mul(n, 2));
   $.execute.store.result.score("#c", OBJECTIVE).run.function(Choose).with.storage(STORAGE, "comb.call");
-  returnInt(div(score("#c"), add(args.n, 1)));
+  returnInt(div(score("#c"), add(n, 1)));
 }
 
 /**
  * Derangements: orderings of n items where nothing stays in place. D(n) = (n - 1)(D(n - 1) + D(n - 2)).
  * @mcfunction
  */
-export function Derangements(args: Macro<"n">) {
+export function Derangements({ n }: Macro) {
   setInt("comb.a", 1); // D(0)
   setInt("comb.b", 0); // D(1)
-  onlyIf(intIn(args.n, { max: 0 })).run.return(1);
-  forLoop("i", add(args.n, 1), {}, (a) => {
+  onlyIf(intIn(n, { max: 0 })).run.return(1);
+  forLoop("i", add(n, 1), {}, (a) => {
     setInt("comb.t", mul(sub(a.i, 1), add(stored("comb.a"), stored("comb.b"))));
     $.data.modify.storage(STORAGE, "comb.a").set.from.storage(STORAGE, "comb.b");
     $.data.modify.storage(STORAGE, "comb.b").set.from.storage(STORAGE, "comb.t");
@@ -78,10 +78,10 @@ export function Derangements(args: Macro<"n">) {
  * Row n of Pascal's triangle, into `demo:math pascal` as a list.
  * @mcfunction
  */
-export function PascalRow(args: Macro<"n">) {
+export function PascalRow({ n }: Macro) {
   $.data.modify.storage(STORAGE, "pascal").set.value([1]);
   // Each entry from the previous one: C(n, i) = C(n, i - 1) · (n - i + 1) / i
-  forLoop("i", add(args.n, 1), { n: args.n }, (a) => {
+  forLoop("i", add(n, 1), { n: n }, (a) => {
     $.data.modify.storage(STORAGE, "pascal").append.compute.default.integer(
       div(mul(stored("pascal[-1]"), sub(add(a.n, 1), a.i)), a.i),
     );
@@ -92,9 +92,9 @@ export function PascalRow(args: Macro<"n">) {
  * The sum of `count` rolls of a die with `sides` sides.
  * @mcfunction
  */
-export function RollDice(args: Macro<"count" | "sides">) {
+export function RollDice({ count, sides }: Macro) {
   setInt("dice.sum", 0);
-  forLoop("i", args.count, { sides: args.sides }, (a) => {
+  forLoop("i", count, { sides: sides }, (a) => {
     setInt("dice.sum", add(stored("dice.sum"), uniform(1, a.sides)));
   });
   returnInt(stored("dice.sum"));
@@ -104,6 +104,6 @@ export function RollDice(args: Macro<"count" | "sides">) {
  * Heads in n fair coin flips.
  * @mcfunction
  */
-export function CoinFlips(args: Macro<"n">) {
-  returnInt(binomial(args.n, 0.5));
+export function CoinFlips({ n }: Macro) {
+  returnInt(binomial(n, 0.5));
 }

@@ -29,8 +29,16 @@ export interface MacroArg<T = unknown> {
   readonly [AS]: T;
 }
 
-/** The parameter of a macro function, listing its argument names: `function Greet(args: Macro<"name" | "count">)`. */
-export type Macro<Names extends string> = { readonly [K in Names]: MacroArg };
+/**
+ * The parameter of a macro function. Take the arguments you use out of it by name:
+ *
+ *     function Greet({ name, count }: Macro) {
+ *       $.say(macro`hi ${name}, you have ${count} points`);
+ *     }
+ *
+ * To list the names in the type too, give them: `Macro<"name" | "count">`.
+ */
+export type Macro<Names extends string = string> = { readonly [K in Names]: MacroArg };
 
 /** Inside values: any field or list entry may be a macro argument. */
 type MacroInside<T> = T extends (...args: never[]) => unknown

@@ -1,15 +1,15 @@
 import { $, macro, type Macro, type MacroArg, type Vec3 } from "#mc";
 
 // A function that uses `args` is a macro function: the game fills them in when it's called.
-export function Gift(args: Macro<"player" | "item" | "count" | "from">) {
-  $.give(args.player, args.item, args.count);
-  $.tellraw(args.player, [{ text: macro`"${args.from}"`, color: "gold" }, { text: " sent you a gift!" }]);
+export function Gift({ player, item, count, from }: Macro) {
+  $.give(player, item, count);
+  $.tellraw(player, [{ text: macro`"${from}"`, color: "gold" }, { text: " sent you a gift!" }]);
 }
 
 // tp takes an entity or a position here, so the argument says which one it is.
 /** @mcfunction */
-export function Warp(args: Macro<"destination">) {
-  $.tp("@s", args.destination as MacroArg<Vec3>);
+export function Warp({ destination }: Macro) {
+  $.tp("@s", destination as MacroArg<Vec3>);
 }
 
 /** @mcfunction */

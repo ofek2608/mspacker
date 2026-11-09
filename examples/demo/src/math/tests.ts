@@ -10,8 +10,8 @@ import { Cross, Det, Dot, Inverse, MatMul, MatPow, MatVec, Norm, Solve, Trace, T
 import { Clamp, Gcd, Hypot, IntSqrt, IsPrime, Lcm, Lerp, PowMod } from "./numbers.js";
 import * as T from "./trig.js";
 
-function Fail(args: Macro<"name" | "got" | "want">) {
-  $(macro`say math-FAIL ${args.name} got ${args.got} want ${args.want}`);
+function Fail({ name, got, want }: Macro) {
+  $(macro`say math-FAIL ${name} got ${got} want ${want}`);
   $.scoreboard.players.add("#fail", OBJECTIVE, 1);
 }
 
@@ -216,8 +216,8 @@ export function TestLinalg() {
 }
 
 /** @dev */
-function Summary(args: Macro<"pass" | "fail">) {
-  $(macro`say math-done pass ${args.pass} fail ${args.fail}`);
+function Summary({ pass, fail }: Macro) {
+  $(macro`say math-done pass ${pass} fail ${fail}`);
 }
 
 /** @dev */

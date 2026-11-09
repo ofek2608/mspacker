@@ -30,12 +30,12 @@ export function TickBlockCycle() {
 }
 
 /** Look up blocks[i] and place it. */
-function Pick(args: Macro<"i">) {
-  $.data.modify.storage(STORE, "place.block").set.from.storage(STORE, macro`blocks[${args.i}]`);
+function Pick({ i }: Macro) {
+  $.data.modify.storage(STORE, "place.block").set.from.storage(STORE, macro`blocks[${i}]`);
   $.function(Place).with.storage(STORE, "place");
 }
 
-function Place(args: Macro<"block">) {
+function Place({ block }: Macro) {
   // strict: no block updates, so torches, doors, etc. don't pop off.
-  $.setblock(POS, args.block).strict;
+  $.setblock(POS, block).strict;
 }

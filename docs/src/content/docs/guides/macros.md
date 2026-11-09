@@ -3,23 +3,23 @@ title: Macros
 description: Functions that take arguments when they're called in game.
 ---
 
-A function that uses `args` is a [macro function](https://minecraft.wiki/w/Function_(Java_Edition)#Macros):
+A function that takes arguments is a [macro function](https://minecraft.wiki/w/Function_(Java_Edition)#Macros):
 the game fills in the values when it's called. Macros need Minecraft 1.20.2 or newer.
 
 ```ts
 import { $, macro, type Macro } from "#mc";
 
-export function Reward(args: Macro<"player" | "item" | "count">) {
-  $.give(args.player, args.item, args.count);
-  $.say(macro`gave ${args.count} ${args.item}`);
+export function Reward({ player, item, count }: Macro) {
+  $.give(player, item, count);
+  $.say(macro`gave ${count} ${item}`);
 }
 // $give $(player) $(item) $(count)
 // $say gave $(count) $(item)
 ```
 
-`Macro<...>` lists the argument names, so a typo like `args.cuont` is an error. Use `args.name`
-wherever the value goes, also inside objects like NBT and text components. The commands that use it
-are written as macro lines automatically.
+Name the arguments you need between `{ }`; each name is the argument's name in game. Use an argument
+wherever the value goes, also inside objects like NBT and text components. The commands that use
+one are written as macro lines automatically.
 
 ## Calling a macro function
 
@@ -46,19 +46,19 @@ needs `true` or `false`, pass those as text.
 
 ## Building values from arguments
 
-When an argument is the whole value, pass it as it is: `$.kill(args.target)`. When it's only part
-of a value, build the value with the `macro` template:
+When an argument is the whole value, pass it as it is: `$.kill(target)`. When it's only part of a
+value, build the value with the `macro` template:
 
 ```ts
 import { $, macro, type Macro } from "#mc";
 
-export function Score(args: Macro<"team" | "player" | "points">) {
+export function Score({ team, player, points }: Macro) {
   // a selector
-  $.effect.give(macro`@a[team=${args.team}]`, "glowing", 5);
+  $.effect.give(macro`@a[team=${team}]`, "glowing", 5);
   // a storage path
-  $.data.modify.storage("mypack:scores", macro`players.${args.player}`).set.value(args.points);
+  $.data.modify.storage("mypack:scores", macro`players.${player}`).set.value(points);
   // a sentence
-  $.say(macro`${args.player} scored ${args.points} for ${args.team}`);
+  $.say(macro`${player} scored ${points} for ${team}`);
 }
 // $effect give @a[team=$(team)] glowing 5
 // $data modify storage mypack:scores players.$(player) set value $(points)
@@ -66,7 +66,7 @@ export function Score(args: Macro<"team" | "player" | "points">) {
 ```
 
 What `macro` makes is a macro argument too, so it fits anywhere a value goes. A normal template
-string can't use arguments (`` `@a[team=${args.team}]` `` stops the build with a hint), and text you
+string can't use arguments (`` `@a[team=${team}]` `` stops the build with a hint), and text you
 write yourself never becomes a macro, even if it contains `$(...)`.
 
 ## When a command takes different kinds of values
@@ -77,9 +77,9 @@ or an entity to teleport to. A macro argument could be either, so TypeScript ask
 ```ts
 import { $, type Macro, type MacroArg, type Vec3 } from "#mc";
 
-export function Warp(args: Macro<"to">) {
-  $.tp("@s", args.to);                    // error: is it a position or an entity?
-  $.tp("@s", args.to as MacroArg<Vec3>);  // $tp @s $(to)
+export function Warp({ to }: Macro) {
+  $.tp("@s", to);                    // error: is it a position or an entity?
+  $.tp("@s", to as MacroArg<Vec3>);  // $tp @s $(to)
 }
 ```
 
@@ -92,8 +92,8 @@ A value is put in exactly as the game gets it, so a string inside NBT or a text 
 quotes. Add them yourself with `macro`:
 
 ```ts
-export function Welcome(args: Macro<"name">) {
-  $.tellraw("@a", { text: macro`"${args.name}"`, color: "gold" });   // {text:"$(name)",color:"gold"}
+export function Welcome({ name }: Macro) {
+  $.tellraw("@a", { text: macro`"${name}"`, color: "gold" });   // {text:"$(name)",color:"gold"}
 }
 ```
 
@@ -101,11 +101,13 @@ The game pastes the value in as text, so a value with a `"` in it breaks the com
 the values fit is up to you.
 
 Before 1.21.5 text is JSON, and a macro argument in a text component is already written as a JSON
-string: `{ text: args.name }` gives `{"text":"$(name)"}`.
+string: `{ text: name }` gives `{"text":"$(name)"}`.
 
 ## Limits
 
 - Argument names can only use letters, digits and `_`. Paths like `Pos[0]` aren't allowed; copy the
   value into storage first and call the function `with storage`.
-- `args` only works in the function's own commands. To use a value in a function it calls, pass it
-  on: `$.function(Other, { name: args.name })`.
+- Arguments only work in the function's own commands, not in functions declared inside it. To use
+  a value in a function it calls, pass it on: `$.function(Other, { name })`.
+- To keep all arguments in one object instead, name the parameter: `function Reward(args: Macro)`
+  and use `args.player`. `Macro<"player" | "item">` also lists the names in the type.

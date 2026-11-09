@@ -97,5 +97,5 @@ export function Setup() {
 }
 ```
 
-`id` also works with [macro arguments](/guides/macros/): `` id(macro`rewards/${args.kind}`) `` is
+`id` also works with [macro arguments](/guides/macros/): `` id(macro`rewards/${kind}`) `` is
 `mypack:rewards/$(kind)`.

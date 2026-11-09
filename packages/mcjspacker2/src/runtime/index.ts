@@ -46,7 +46,7 @@ packInfo().listeners.add((info) => {
 
 /**
  * An id in your namespace: `id("rewards/daily")` is `mypack:rewards/daily`. Also takes macro
- * arguments: `` id(macro`rewards/${args.kind}`) `` is `mypack:rewards/$(kind)`.
+ * arguments: `` id(macro`rewards/${kind}`) `` is `mypack:rewards/$(kind)`.
  */
 export function id(path: string): string;
 export function id(path: MacroArg): MacroArg;

@@ -165,10 +165,10 @@ export function setText(tag: string, ...given: (Part | Part[])[]) {
 }
 
 /** Macro functions that join p0..pN into one text, one per part count. */
-const joiners = new Map<number, (args: Macro<string>) => void>();
+const joiners = new Map<number, (args: Macro) => void>();
 function joinText(count: number) {
   if (!joiners.has(count)) {
-    joiners.set(count, (args: Macro<string>) => {
+    joiners.set(count, (args: Macro) => {
       // macro`...` joins macro arguments into text, so fold the parts into one.
       const text = Array.from({ length: count }, (_, i) => args[`p${i}`]!).reduce((all, part) => macro`${all}${part}`);
       $.data.modify.entity(tagged(args.tag!), "text").set.value(macro`"${text}"`);
@@ -178,13 +178,13 @@ function joinText(count: number) {
 }
 
 /** A square at a position worked out in game: x/y/z/color/tag from storage `with` (color: ARGB int). */
-export function Dot(args: Macro<"x" | "y" | "z" | "color" | "tag">) {
-  $.summon("text_display", macro`${args.x} ${args.y} ${args.z}`, { Tags: [TAG, macro`"${args.tag}"`], ...squareData(0.15, 0), background: args.color });
+export function Dot({ x, y, z, color, tag }: Macro) {
+  $.summon("text_display", macro`${x} ${y} ${z}`, { Tags: [TAG, macro`"${tag}"`], ...squareData(0.15, 0), background: color });
 }
 
 /** setblock at a position worked out in game (x/y/z/block from storage `with`). */
-export function Plot(args: Macro<"x" | "y" | "z" | "block">) {
-  $.setblock(macro`${args.x} ${args.y} ${args.z}`, args.block);
+export function Plot({ x, y, z, block }: Macro) {
+  $.setblock(macro`${x} ${y} ${z}`, block);
 }
 
 /** Write `demo:math <path>` as a float; a shorter name for the stations. */

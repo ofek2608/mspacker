@@ -172,81 +172,79 @@ export const degrees = (x: Num, path: string) => setFloat(path, mul(x, 180 / PI)
 
 // ---------------------------------------------------------------- in-game: result in `demo:math out`
 
-type X = Macro<"x">;
-
 /** @mcfunction */
-export function Sin(args: X) {
-  sin(args.x, "out");
+export function Sin({ x }: Macro) {
+  sin(x, "out");
 }
 /** @mcfunction */
-export function Cos(args: X) {
-  cos(args.x, "out");
+export function Cos({ x }: Macro) {
+  cos(x, "out");
 }
 /** @mcfunction */
-export function Tan(args: X) {
-  tan(args.x, "out");
+export function Tan({ x }: Macro) {
+  tan(x, "out");
 }
 /** @mcfunction */
-export function Exp(args: X) {
-  exp(args.x, "out");
+export function Exp({ x }: Macro) {
+  exp(x, "out");
 }
 /** @mcfunction */
-export function Ln(args: X) {
-  ln(args.x, "out");
+export function Ln({ x }: Macro) {
+  ln(x, "out");
 }
 /** @mcfunction */
-export function Log10(args: X) {
-  log10(args.x, "out");
+export function Log10({ x }: Macro) {
+  log10(x, "out");
 }
 /** @mcfunction */
-export function Log2(args: X) {
-  log2(args.x, "out");
+export function Log2({ x }: Macro) {
+  log2(x, "out");
 }
 /** @mcfunction */
-export function Sinh(args: X) {
-  sinh(args.x, "out");
+export function Sinh({ x }: Macro) {
+  sinh(x, "out");
 }
 /** @mcfunction */
-export function Cosh(args: X) {
-  cosh(args.x, "out");
+export function Cosh({ x }: Macro) {
+  cosh(x, "out");
 }
 /** @mcfunction */
-export function Tanh(args: X) {
-  tanh(args.x, "out");
+export function Tanh({ x }: Macro) {
+  tanh(x, "out");
 }
 /** @mcfunction */
-export function Asinh(args: X) {
-  asinh(args.x, "out");
+export function Asinh({ x }: Macro) {
+  asinh(x, "out");
 }
 /** @mcfunction */
-export function Acosh(args: X) {
-  acosh(args.x, "out");
+export function Acosh({ x }: Macro) {
+  acosh(x, "out");
 }
 /** @mcfunction */
-export function Atanh(args: X) {
-  atanh(args.x, "out");
+export function Atanh({ x }: Macro) {
+  atanh(x, "out");
 }
 /** @mcfunction */
-export function Atan(args: X) {
-  atan(args.x, "out");
+export function Atan({ x }: Macro) {
+  atan(x, "out");
 }
 /** @mcfunction */
-export function Asin(args: X) {
-  asin(args.x, "out");
+export function Asin({ x }: Macro) {
+  asin(x, "out");
 }
 /** @mcfunction */
-export function Acos(args: X) {
-  acos(args.x, "out");
+export function Acos({ x }: Macro) {
+  acos(x, "out");
 }
 /** @mcfunction */
-export function Atan2(args: Macro<"y" | "x">) {
-  atan2(args.y, args.x, "out");
+export function Atan2({ y, x }: Macro) {
+  atan2(y, x, "out");
 }
 /** @mcfunction */
-export function Radians(args: X) {
-  radians(args.x, "out");
+export function Radians({ x }: Macro) {
+  radians(x, "out");
 }
 /** @mcfunction */
-export function Degrees(args: X) {
-  degrees(args.x, "out");
+export function Degrees({ x }: Macro) {
+  degrees(x, "out");
 }

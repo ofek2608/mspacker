@@ -196,13 +196,13 @@ export function trace(a: string, path: string) {
 }
 
 /** Swap rows k and p of matrix `r` (k and p from storage `with`). */
-const swaps = new Map<string, (args: Macro<"k" | "p">) => void>();
+const swaps = new Map<string, (args: Macro) => void>();
 function swapRows(r: string) {
   if (!swaps.has(r)) {
-    swaps.set(r, (args: Macro<"k" | "p">) => {
-      $.data.modify.storage(STORAGE, "linalg.row").set.from.storage(STORAGE, macro`${mat(r)}.m[${args.k}]`);
-      $.data.modify.storage(STORAGE, macro`${mat(r)}.m[${args.k}]`).set.from.storage(STORAGE, macro`${mat(r)}.m[${args.p}]`);
-      $.data.modify.storage(STORAGE, macro`${mat(r)}.m[${args.p}]`).set.from.storage(STORAGE, "linalg.row");
+    swaps.set(r, ({ k, p }: Macro) => {
+      $.data.modify.storage(STORAGE, "linalg.row").set.from.storage(STORAGE, macro`${mat(r)}.m[${k}]`);
+      $.data.modify.storage(STORAGE, macro`${mat(r)}.m[${k}]`).set.from.storage(STORAGE, macro`${mat(r)}.m[${p}]`);
+      $.data.modify.storage(STORAGE, macro`${mat(r)}.m[${p}]`).set.from.storage(STORAGE, "linalg.row");
     });
   }
   return swaps.get(r)!;
@@ -322,20 +322,20 @@ export function MatMul() {
   matMul("A", "B", "C");
 }
 /** @mcfunction */
-export function MatScale(args: Macro<"k">) {
-  matScale("A", args.k, "C");
+export function MatScale({ k }: Macro) {
+  matScale("A", k, "C");
 }
 /** @mcfunction */
 export function Transpose() {
   transpose("A", "C");
 }
 /** @mcfunction */
-export function Identity(args: Macro<"n">) {
-  identity("A", args.n);
+export function Identity({ n }: Macro) {
+  identity("A", n);
 }
 /** @mcfunction */
-export function MatPow(args: Macro<"e">) {
-  matPow("A", args.e, "C");
+export function MatPow({ e }: Macro) {
+  matPow("A", e, "C");
 }
 /**
  * `demo:math out` = det(A).
@@ -381,8 +381,8 @@ export function VecSub() {
   vecSub("U", "V", "W");
 }
 /** @mcfunction */
-export function VecScale(args: Macro<"k">) {
-  vecScale("U", args.k, "W");
+export function VecScale({ k }: Macro) {
+  vecScale("U", k, "W");
 }
 /**
  * `demo:math out` = U · V.

@@ -45,18 +45,15 @@ export function forLoop<V extends string, P extends Record<string, MacroArg> = {
   start: Num = 0,
 ) {
   const frame = `loop.${name}${loops++}`;
-  // In an object so it stays anonymous: a `const step = ...` would name every loop "step".
-  const loop = {
-    step: (args: Macro<V | "end">) => {
-      body(args as Macro<V> & P);
-      setInt(`${frame}.${name}`, add(args[name], 1));
-      // Next step while name + 1 < end.
-      onlyIf(intIn(sub(args.end, args[name]), { min: 2 })).run.function(loop.step).with.storage(STORAGE, frame);
-    },
+  const step = (args: Macro<V | "end">) => {
+    body(args as Macro<V> & P);
+    setInt(`${frame}.${name}`, add(args[name], 1));
+    // Next step while name + 1 < end.
+    onlyIf(intIn(sub(args.end, args[name]), { min: 2 })).run.function(step).with.storage(STORAGE, frame);
   };
   $.data.modify.storage(STORAGE, frame).set.value({ ...pass });
   setInt(`${frame}.${name}`, start);
   setInt(`${frame}.end`, end);
   // Run while start < end.
-  onlyIf(intIn(sub(stored(`${frame}.end`), stored(`${frame}.${name}`)), { min: 1 })).run.function(loop.step).with.storage(STORAGE, frame);
+  onlyIf(intIn(sub(stored(`${frame}.end`), stored(`${frame}.${name}`)), { min: 1 })).run.function(step).with.storage(STORAGE, frame);
 }

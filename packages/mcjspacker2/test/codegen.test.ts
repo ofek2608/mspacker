@@ -92,6 +92,11 @@ $.tellraw("@a", { text: "x", color: "#ff8800", click_event: { action: "run_comma
 $.tellraw("@a", { bold: "yes" });
 // @ts-expect-error not a color
 $.tellraw("@a", { color: "golden" });
+// Arguments taken out by name, without listing them in the type.
+export function Short({ who, n, item }: Macro) {
+  $.scoreboard.players.set(who, "kills", n);
+  $.say(macro\`gave \${n} \${item}\`);
+}
 // Macro arguments fit anywhere, also inside objects; only their names are checked.
 export function WithArgs(args: Macro<"who" | "n" | "name" | "pos">) {
   $.tp(args.who as MacroArg<Selector>, args.pos as MacroArg<Vec3>);
