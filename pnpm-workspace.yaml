@@ -2,3 +2,7 @@ packages:
   - packages/*
   - examples/*
   - docs
+
+# esbuild downloads its platform binary in a postinstall script; pnpm skips unapproved scripts.
+allowBuilds:
+  esbuild: true
