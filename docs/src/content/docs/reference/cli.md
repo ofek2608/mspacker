@@ -1,46 +1,46 @@
 ---
 title: CLI
-description: The mcjs2 and create-mcjspacker2 commands.
+description: The mspacker and create-mspacker commands.
 ---
 
-## `create-mcjspacker2`
+## `create-mspacker`
 
 ```sh
-npm create mcjspacker2@latest [dir] -- [options]
+npm create mspacker@latest [dir] -- [options]
 ```
 
-Sets up a new project interactively, or adds mcjspacker2 to an existing one (`.` as the directory;
+Sets up a new project interactively, or adds MSPacker to an existing one (`.` as the directory;
 existing files are kept). See [getting started](/getting-started/#create-a-project) for
 the options.
 
-## `mcjs2`
+## `mspacker`
 
 All commands take `--cwd <dir>` to run in another project directory.
 
-### `mcjs2 gen`
+### `mspacker gen`
 
 ```sh
-mcjs2 gen [--force]
+mspacker gen [--force]
 ```
 
 Reads the commands of your Minecraft `version` from its server jar and writes them into
-`.mcjs2/gen`, where `$` comes from. Run it again after changing `version`. The result is cached, so
+`.mspacker/gen`, where `$` comes from. Run it again after changing `version`. The result is cached, so
 it's quick after the first time; `--force` reads the jar again. If the version has kinds of values
-mcjspacker2 doesn't know yet, it says so (see [new value types](/reference/custom-parsers/)).
+MSPacker doesn't know yet, it says so (see [new value types](/reference/custom-parsers/)).
 
-### `mcjs2 build`
+### `mspacker build`
 
 ```sh
-mcjs2 build [--zip]
+mspacker build [--zip]
 ```
 
 Builds the pack into `<outDir>/<name>`, replacing what was there. `--zip` also writes
 `<outDir>/<name>.zip`. Runs `gen` first if the library hasn't been generated.
 
-### `mcjs2 dev`
+### `mspacker dev`
 
 ```sh
-mcjs2 dev [--save <name|auto>]
+mspacker dev [--save <name|auto>]
 ```
 
 Starts the dev server, rebuilds on every save and reloads the pack in game. See [dev mode](/guides/dev-mode/).
@@ -49,4 +49,4 @@ Starts the dev server, rebuilds on every save and reloads the pack in game. See 
 |---|---|
 | `--save <name>` | Build into a singleplayer save instead of the server. `auto` picks the most recently played one. |
 
-The cache directory is `$XDG_CACHE_HOME/mcjspacker2` when `XDG_CACHE_HOME` is set.
+The cache directory is `$XDG_CACHE_HOME/mspacker` when `XDG_CACHE_HOME` is set.

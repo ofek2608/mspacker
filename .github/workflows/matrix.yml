@@ -23,7 +23,7 @@ jobs:
           node-version: 24
           cache: pnpm
       # Every Java the tested versions need (Mojang's javaVersion.majorVersion). setup-java exports
-      # JAVA_HOME_<major>_X64 for each, which mcjs2 picks per version.
+      # JAVA_HOME_<major>_X64 for each, which MSPacker picks per version.
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -36,23 +36,23 @@ jobs:
       # Server jars and datagen output (~2 GB for all versions).
       - uses: actions/cache@v4
         with:
-          path: ~/.cache/mcjspacker2
-          key: matrix-${{ hashFiles('packages/mcjspacker2/test/matrix/versions.test.ts') }}
+          path: ~/.cache/mspacker
+          key: matrix-${{ hashFiles('packages/mspacker/test/matrix/versions.test.ts') }}
           restore-keys: matrix-
       - run: pnpm install --frozen-lockfile
       - name: Run the version matrix
-        working-directory: packages/mcjspacker2
+        working-directory: packages/mspacker
         run: pnpm vitest run test/matrix
         env:
-          MCJS2_MATRIX: "1"
-          MCJS2_MATRIX_VERSIONS: ${{ inputs.versions }}
-          MCJS2_MATRIX_CONCURRENCY: "4"
+          MSPACKER_MATRIX: "1"
+          MSPACKER_MATRIX_VERSIONS: ${{ inputs.versions }}
+          MSPACKER_MATRIX_CONCURRENCY: "4"
       - name: Upload probe reports and server logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: matrix-reports
           path: |
-            packages/mcjspacker2/.matrix/*/probe-report.json
-            packages/mcjspacker2/.matrix/*/server-output.log
+            packages/mspacker/.matrix/*/probe-report.json
+            packages/mspacker/.matrix/*/server-output.log
           if-no-files-found: ignore

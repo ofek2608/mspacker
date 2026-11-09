@@ -24,7 +24,7 @@ function stubFetch(serverSha1: string) {
 describe("downloadServerJar", () => {
   let cache: string;
   beforeEach(() => {
-    cache = mkdtempSync(join(tmpdir(), "mcjs2-dl-"));
+    cache = mkdtempSync(join(tmpdir(), "mspacker-dl-"));
     vi.stubEnv("XDG_CACHE_HOME", cache);
   });
   afterEach(() => {

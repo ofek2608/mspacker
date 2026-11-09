@@ -17,7 +17,7 @@ describe("dimension changes", () => {
   });
 
   it("reads the dimension files of a pack on disk", () => {
-    const pack = mkdtempSync(join(tmpdir(), "mcjs2-dims-"));
+    const pack = mkdtempSync(join(tmpdir(), "mspacker-dims-"));
     mkdirSync(join(pack, "data/pk/dimension"), { recursive: true });
     writeFileSync(join(pack, dim), "{}");
     expect(readDimensionFiles(pack)).toEqual(new Map([[dim, "{}"]]));

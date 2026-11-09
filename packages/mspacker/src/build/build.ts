@@ -34,7 +34,7 @@ const toPosix = (p: string) => p.split(sep).join("/");
 
 function instrumentPlugin(srcDir: string): Plugin {
   return {
-    name: "mcjs2-instrument",
+    name: "mspacker-instrument",
     setup(b) {
       b.onLoad({ filter: SOURCE_RE }, (args) => {
         const rel = relative(srcDir, args.path);
@@ -56,7 +56,7 @@ function instrumentPlugin(srcDir: string): Plugin {
 
 /** Bare package imports stay external (resolved from the project at runtime); `#` subpath imports are bundled. */
 const externalPackages: Plugin = {
-  name: "mcjs2-externals",
+  name: "mspacker-externals",
   setup(b) {
     b.onResolve({ filter: /^[^./#]/ }, (args) => {
       if (args.kind === "entry-point") return undefined;
@@ -81,10 +81,10 @@ function withSourceLocation(e: unknown, srcDir: string): unknown {
 
 export function readGenMeta(cfg: ResolvedConfig): GenMeta {
   const file = join(cfg.genDir, "meta.json");
-  if (!existsSync(file)) throw new Error("Generated library missing. Run `mcjs2 gen` first.");
+  if (!existsSync(file)) throw new Error("Generated library missing. Run `mspacker gen` first.");
   const meta = JSON.parse(readFileSync(file, "utf8")) as GenMeta;
   if (meta.version !== cfg.version) {
-    throw new Error(`Generated library is for ${meta.version} but config says ${cfg.version}. Run \`mcjs2 gen\`.`);
+    throw new Error(`Generated library is for ${meta.version} but config says ${cfg.version}. Run \`mspacker gen\`.`);
   }
   return meta;
 }
@@ -105,7 +105,7 @@ export async function buildPack(
   const entry = sources.map((s) => `import ${JSON.stringify(s)};`).join("\n");
 
   await esbuild({
-    stdin: { contents: entry, resolveDir: cfg.projectDir, sourcefile: "mcjs2-entry.js", loader: "js" },
+    stdin: { contents: entry, resolveDir: cfg.projectDir, sourcefile: "mspacker-entry.js", loader: "js" },
     outfile,
     bundle: true,
     platform: "node",
@@ -175,8 +175,8 @@ function runInWorker(input: WorkerInput): Promise<{ files: Map<string, string>; 
   });
 }
 
-/** How build errors are shown: the message (with its source location); the full stack with MCJS2_DEBUG=1. */
+/** How build errors are shown: the message (with its source location); the full stack with MSPACKER_DEBUG=1. */
 export function formatBuildError(e: unknown): string {
   if (!(e instanceof Error)) return String(e);
-  return process.env.MCJS2_DEBUG ? (e.stack ?? e.message) : e.message;
+  return process.env.MSPACKER_DEBUG ? (e.stack ?? e.message) : e.message;
 }

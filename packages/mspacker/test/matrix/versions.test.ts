@@ -2,9 +2,9 @@
  * Version matrix: for each Minecraft version, run the whole pipeline against the real game.
  *   download server jar -> datagen -> codegen -> tsc -> build -> start server -> check pack loads and functions run
  *
- * Slow and needs network + Java, so it only runs with MCJS2_MATRIX=1:
- *   MCJS2_MATRIX=1 pnpm vitest run test/matrix
- * Pick versions with MCJS2_MATRIX_VERSIONS="1.21.4,26.3". Skip the server stage with MCJS2_MATRIX_SERVER=0.
+ * Slow and needs network + Java, so it only runs with MSPACKER_MATRIX=1:
+ *   MSPACKER_MATRIX=1 pnpm vitest run test/matrix
+ * Pick versions with MSPACKER_MATRIX_VERSIONS="1.21.4,26.3". Skip the server stage with MSPACKER_MATRIX_SERVER=0.
  *
  * Work dirs live in .matrix/<version> (gitignored). The test servers' eula.txt is set to true
  * (the EULA was accepted by the project owner for these test servers).
@@ -52,10 +52,10 @@ const DEFAULT_VERSIONS = [
 const LOAD_ONLY: Record<string, string> = {
   "3D Shareware v1.34": "setblock hangs the server thread in this April Fools build",
 };
-const PICKED = (process.env.MCJS2_MATRIX_VERSIONS ?? "").split(",").map((v) => v.trim()).filter(Boolean);
+const PICKED = (process.env.MSPACKER_MATRIX_VERSIONS ?? "").split(",").map((v) => v.trim()).filter(Boolean);
 const VERSIONS = PICKED.length ? PICKED : DEFAULT_VERSIONS;
-const ENABLED = process.env.MCJS2_MATRIX === "1";
-const SERVER = process.env.MCJS2_MATRIX_SERVER !== "0";
+const ENABLED = process.env.MSPACKER_MATRIX === "1";
+const SERVER = process.env.MSPACKER_MATRIX_SERVER !== "0";
 
 const PKG = resolve(import.meta.dirname, "../..");
 
@@ -67,7 +67,7 @@ const buildPack: BuildModule["buildPack"] = ENABLED
   : () => Promise.reject(new Error("matrix disabled"));
 const ROOT = join(PKG, ".matrix");
 /**
- * Versions run concurrently (MCJS2_MATRIX_CONCURRENCY, default 6, set in vitest.config.ts).
+ * Versions run concurrently (MSPACKER_MATRIX_CONCURRENCY, default 6, set in vitest.config.ts).
  * Everything is per-version (dirs, ports, processes) except the build step: the recorder keeps its
  * state on globalThis, so builds take turns through this lock.
  */
@@ -87,17 +87,17 @@ async function setupProject(version: string, commands: unknown) {
   rmSync(project, { recursive: true, force: true });
   mkdirSync(join(project, "src"), { recursive: true });
   mkdirSync(join(project, "node_modules"), { recursive: true });
-  symlinkSync(PKG, join(project, "node_modules", "mcjspacker2"), "dir");
-  writeFileSync(join(project, "package.json"), JSON.stringify({ name: "matrix", type: "module", imports: { "#mc": "./.mcjs2/gen/index.ts" } }));
+  symlinkSync(PKG, join(project, "node_modules", "mspacker"), "dir");
+  writeFileSync(join(project, "package.json"), JSON.stringify({ name: "matrix", type: "module", imports: { "#mc": "./.mspacker/gen/index.ts" } }));
   writeFileSync(
-    join(project, "mcjs2.config.ts"),
+    join(project, "mspacker.config.ts"),
     `export default { version: ${JSON.stringify(version)}, namespace: "matrix:gen", name: "matrix" };\n`,
   );
   writeFileSync(
     join(project, "tsconfig.json"),
     JSON.stringify({
       compilerOptions: { target: "ES2023", module: "ESNext", moduleResolution: "bundler", strict: true, noImplicitOverride: true, noImplicitReturns: true, noFallthroughCasesInSwitch: true, noUnusedLocals: true, noUnusedParameters: true, noEmit: true, skipLibCheck: true, types: [] },
-      include: ["src", ".mcjs2/gen"],
+      include: ["src", ".mspacker/gen"],
     }),
   );
   const included: string[] = [];
@@ -108,7 +108,7 @@ async function setupProject(version: string, commands: unknown) {
     copyFileSync(join(import.meta.dirname, "sample", file), join(project, "src", file));
     included.push(file.replace(/\.ts$/, ""));
   }
-  writeFileSync(join(project, ".gitignore"), ".mcjs2/\ndist/\nnode_modules/\nserver/\n");
+  writeFileSync(join(project, ".gitignore"), ".mspacker/\ndist/\nnode_modules/\nserver/\n");
   return { base, project, included };
 }
 
@@ -175,7 +175,7 @@ matrix.each(VERSIONS)("Minecraft %s", (version) => {
     // 2. codegen into a fresh project
     const { base, project, included } = await setupProject(version, reports.commands);
     const result = generate(reports.commands, reports.registries, { version, packFormat: dataPackFormat(jarVersion)[0] });
-    const genDir = join(project, ".mcjs2", "gen");
+    const genDir = join(project, ".mspacker", "gen");
     mkdirSync(genDir, { recursive: true });
     for (const [name, content] of Object.entries(result.files)) writeFileSync(join(genDir, name), content);
     const meta: GenMeta = { version, packFormat: dataPackFormat(jarVersion) };
@@ -268,19 +268,19 @@ matrix.each(VERSIONS)("Minecraft %s", (version) => {
           .filter((l) => (/(Failed to load|Couldn't load) function/i.test(l) && /matrix[:/\\]/.test(l)) || PACK_ERRORS.test(l));
         expect(errors, `pack load errors on ${version}`).toEqual([]);
         // Some versions (3D Shareware) start RCON before the load functions have run.
-        await waitFor(child, /mcjs2-load-ok/, 30_000, output).catch(() => {});
-        expect(output.text, "@load function ran").toContain("mcjs2-load-ok");
+        await waitFor(child, /mspacker-load-ok/, 30_000, output).catch(() => {});
+        expect(output.text, "@load function ran").toContain("mspacker-load-ok");
         for (const [fn, res] of Object.entries(results)) {
           expect(res, `${fn} on ${version}`).not.toMatch(/Unknown function|Unknown or incomplete|Can't find|error/i);
         }
         if (!LOAD_ONLY[version]) {
           // The server can log a function's output after answering the RCON command that ran it.
-          await waitFor(child, /mcjs2-commands-ok/, 30_000, output).catch(() => {});
-          expect(output.text, "commands function ran to the end").toContain("mcjs2-commands-ok");
+          await waitFor(child, /mspacker-commands-ok/, 30_000, output).catch(() => {});
+          expect(output.text, "commands function ran to the end").toContain("mspacker-commands-ok");
           if (included.includes("macro")) {
-            await waitFor(child, /mcjs2-macro-ok yo 2/, 30_000, output).catch(() => {});
-            expect(output.text, "macro function ran with arguments").toContain("mcjs2-macro-ok hi 5");
-            expect(output.text, "macro function ran with storage").toContain("mcjs2-macro-ok yo 2");
+            await waitFor(child, /mspacker-macro-ok yo 2/, 30_000, output).catch(() => {});
+            expect(output.text, "macro function ran with arguments").toContain("mspacker-macro-ok hi 5");
+            expect(output.text, "macro function ran with storage").toContain("mspacker-macro-ok yo 2");
           }
         }
         expect(failed.map((f) => `${f.probe.line} -> ${f.error}`), `parser probes on ${version}`).toEqual([]);
@@ -297,6 +297,6 @@ matrix.each(VERSIONS)("Minecraft %s", (version) => {
 });
 
 describe.skipIf(ENABLED)("version matrix", () => {
-  it.skip("set MCJS2_MATRIX=1 to run", () => {});
+  it.skip("set MSPACKER_MATRIX=1 to run", () => {});
 });
 

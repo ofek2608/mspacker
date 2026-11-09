@@ -42,7 +42,7 @@ describe("generate", () => {
   });
 
   describe("type-checks", () => {
-    const dir = mkdtempSync(join(tmpdir(), "mcjs2-codegen-"));
+    const dir = mkdtempSync(join(tmpdir(), "mspacker-codegen-"));
     afterAll(() => rmSync(dir, { recursive: true, force: true }));
 
     it("generated code and sample usage compile with tsc", () => {
@@ -132,7 +132,7 @@ export function WithArgs(args: Macro<"who" | "n" | "name" | "pos">) {
             // The runtime source imports node builtins; user projects see its .d.ts instead.
             typeRoots: [resolve("node_modules/@types")],
             types: ["node"],
-            paths: { "mcjspacker2/runtime": [resolve("src/runtime/index.ts")] },
+            paths: { "mspacker/runtime": [resolve("src/runtime/index.ts")] },
           },
           include: ["use.ts", "gen"],
         }),

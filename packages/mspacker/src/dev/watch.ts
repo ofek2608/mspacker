@@ -86,7 +86,7 @@ async function serverTarget(cfg: ResolvedConfig, opts: DevOptions): Promise<Targ
         // The server writes eula.txt itself and stops until the user accepts it. Keep watching.
         opts.log(
           `Server stopped: the Minecraft EULA (https://aka.ms/MinecraftEULA) is not accepted.\n` +
-            `  To accept it, set eula=true in ${eulaFile}, then run \`mcjs2 dev\` again. Still watching and rebuilding.`,
+            `  To accept it, set eula=true in ${eulaFile}, then run \`mspacker dev\` again. Still watching and rebuilding.`,
         );
         return;
       }
@@ -134,21 +134,21 @@ async function serverTarget(cfg: ResolvedConfig, opts: DevOptions): Promise<Targ
     },
     versionChanged: async (c, from) => {
       try {
-        // Swaps the jar if mcjs2 installed it (a jar you put there yourself is never replaced).
+        // Swaps the jar if MSPacker installed it (a jar you put there yourself is never replaced).
         await resolveServer(c.projectDir, c.version, c.server, { log: opts.log, forDev: true });
       } catch (e) {
         opts.log(`warning: couldn't set up the Minecraft ${c.version} server jar: ${(e as Error).message}`);
       }
       opts.log(
         child
-          ? `The server is still running Minecraft ${from}. To play on ${c.version}, type \`stop\` in the server console, then run \`mcjs2 dev\` again.`
+          ? `The server is still running Minecraft ${from}. To play on ${c.version}, type \`stop\` in the server console, then run \`mspacker dev\` again.`
           : `If the server is running, restart it to play on Minecraft ${c.version}.`,
       );
     },
     dimensionsChanged: (ids) => {
       // A server we just started loads them on boot.
       if (skipNextReload) return;
-      opts.log(`Dimensions changed (${ids.join(", ")}): restart the server to load them (stop it, then run mcjs2 dev again); /reload doesn't.`);
+      opts.log(`Dimensions changed (${ids.join(", ")}): restart the server to load them (stop it, then run mspacker dev again); /reload doesn't.`);
     },
     close: () => {
       rcon?.close();
@@ -167,7 +167,7 @@ export async function dev(projectDir: string, opts: DevOptions): Promise<void> {
   let reloadConfig = false;
   // The version the generated commands are for; regenerated when the config's version changes.
   let libVersion = generatedVersion(cfg);
-  // Our own regeneration writes .mcjs2/gen, which shouldn't trigger another rebuild.
+  // Our own regeneration writes .mspacker/gen, which shouldn't trigger another rebuild.
   let generatedAt = 0;
   const run = async () => {
     if (running) {
@@ -227,7 +227,7 @@ export async function dev(projectDir: string, opts: DevOptions): Promise<void> {
   process.on("SIGTERM", stop);
 }
 
-/** The version `.mcjs2/gen` was generated for, or null if it hasn't been generated. */
+/** The version `.mspacker/gen` was generated for, or null if it hasn't been generated. */
 function generatedVersion(cfg: ResolvedConfig): string | null {
   const file = join(cfg.genDir, "meta.json");
   return existsSync(file) ? (JSON.parse(readFileSync(file, "utf8")) as GenMeta).version : null;

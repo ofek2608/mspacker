@@ -1,9 +1,9 @@
-# mcjspacker2
+# MineScriptPacker
 
 Write Minecraft data packs in TypeScript, with autocomplete and error checking for every command of
 the exact Minecraft version you target, snapshots and April Fools versions included.
 
-**Save a file and your changes are live in game**: `mcjs2 dev` rebuilds the pack and reloads it in
+**Save a file and your changes are live in game**: `mspacker dev` rebuilds the pack and reloads it in
 game automatically, no `/reload`, no copying files.
 
 ```ts
@@ -24,7 +24,7 @@ export function StartRound() {
 You need Node.js 22.22+ and Java.
 
 ```sh
-npm create mcjspacker2@latest
+npm create mspacker@latest
 cd my-datapack
 ```
 
@@ -105,7 +105,7 @@ scoreboards.
 
 ```sh
 npm run build          # dist/<name>/, ready to copy into a world's datapacks folder
-npx mcjs2 build --zip  # also a .zip
+npx mspacker build --zip  # also a .zip
 ```
 
 ## Documentation
@@ -116,8 +116,8 @@ configuration and supported versions, plus an API reference generated from the c
 
 ## Packages
 
-- [`mcjspacker2`](packages/mcjspacker2/README.md): the tool (`mcjs2` CLI) and the library your code imports.
-- [`create-mcjspacker2`](packages/create-mcjspacker2/README.md): `npm create mcjspacker2`, sets up a project.
+- [`mspacker`](packages/mspacker/README.md): the tool (`mspacker` CLI) and the library your code imports.
+- [`create-mspacker`](packages/create-mspacker/README.md): `npm create mspacker`, sets up a project.
 
 The [`examples/demo`](examples/demo) project shows a complete pack.
 

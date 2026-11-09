@@ -11,7 +11,7 @@ describe("findJava", () => {
   });
 
   it("uses JAVA_HOME_<major>_<arch> for the version's Java when the launcher runtime is missing", () => {
-    const home = mkdtempSync(join(tmpdir(), "mcjs2-java-"));
+    const home = mkdtempSync(join(tmpdir(), "mspacker-java-"));
     const java = join(home, "bin", process.platform === "win32" ? "java.exe" : "java");
     mkdirSync(join(home, "bin"));
     writeFileSync(java, "");

@@ -42,8 +42,8 @@ jobs:
       # Server jars and datagen output.
       - uses: actions/cache@v4
         with:
-          path: ~/.cache/mcjspacker2
-          key: demo-${{ hashFiles('examples/demo/mcjs2.config.ts') }}
+          path: ~/.cache/mspacker
+          key: demo-${{ hashFiles('examples/demo/mspacker.config.ts') }}
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - name: Generate, type-check and build the demo

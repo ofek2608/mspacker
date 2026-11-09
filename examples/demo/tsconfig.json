@@ -15,7 +15,7 @@
   },
   "include": [
     "src",
-    ".mcjs2/gen",
-    "mcjs2.config.ts"
+    ".mspacker/gen",
+    "mspacker.config.ts"
   ]
 }

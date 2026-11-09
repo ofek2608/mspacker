@@ -19,7 +19,7 @@ export interface Reports {
 
 export function cacheRoot(): string {
   const base = process.env.XDG_CACHE_HOME ?? join(homedir(), ".cache");
-  return join(base, "mcjspacker2");
+  return join(base, "mspacker");
 }
 
 function readReports(dir: string): Reports {

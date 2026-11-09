@@ -1,9 +1,9 @@
 /**
- * What you import from `mcjspacker2` itself: `defineConfig` for mcjs2.config.ts, and the pieces for
+ * What you import from `mspacker` itself: `defineConfig` for mspacker.config.ts, and the pieces for
  * custom argument types (see "Custom argument types" in the reference).
  *
  * @packageDocumentation
- * @module Config (mcjspacker2)
+ * @module Config (mspacker)
  */
 export { defineConfig, defineParser, type UserConfig } from "./config.js";
 export {

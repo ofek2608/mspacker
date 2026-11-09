@@ -11,7 +11,7 @@
  * Every function receives a ParserContext, so an entry can change with the game version (argument
  * formats sometimes change while the parser id stays the same).
  *
- * Projects can add or override entries with `parsers` in mcjs2.config.ts (see defineParser).
+ * Projects can add or override entries with `parsers` in mspacker.config.ts (see defineParser).
  * Unknown parsers fall back to `string`.
  */
 import { nbtKind, snbt, quoteString, type NbtValue, type RawSnbt } from "./nbt.js";
@@ -49,7 +49,7 @@ export interface ParserDef {
 
 /** User-facing parser definition: every field optional; `type` may be a plain string. */
 export interface UserParserDef {
-  /** The TypeScript type in generated signatures (re-run `mcjs2 gen` after changing it). */
+  /** The TypeScript type in generated signatures (re-run `mspacker gen` after changing it). */
   type?: string | ((props: Props, ctx: ParserContext) => string);
   /** Whether a value fits this argument. */
   test?(value: unknown, props: Props, ctx: ParserContext): boolean;
@@ -392,11 +392,11 @@ const FALLBACK: ParserDef = {
 
 // ---------------------------------------------------------------- user overrides
 
-const OVERRIDES = Symbol.for("mcjspacker2.parserOverrides");
+const OVERRIDES = Symbol.for("mspacker.parserOverrides");
 type G = typeof globalThis & { [OVERRIDES]?: Record<string, UserParserDef> };
 
 /**
- * Install project-level parser definitions (from `parsers` in mcjs2.config.ts). Stored on globalThis
+ * Install project-level parser definitions (from `parsers` in mspacker.config.ts). Stored on globalThis
  * so the CLI and the bundled user code share them.
  */
 export function setParserOverrides(overrides: Record<string, UserParserDef> | undefined): void {

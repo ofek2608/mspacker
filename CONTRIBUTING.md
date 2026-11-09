@@ -1,11 +1,11 @@
-# Contributing to mcjspacker2
+# Contributing to MineScriptPacker
 
 ## Repository
 
 ```
-packages/mcjspacker2/         the tool (CLI `mcjs2`) and the runtime user code imports
-packages/create-mcjspacker2/  `npm create mcjspacker2`: standalone (no dependency on the tool), owns the
-                              project template; released with the same version as mcjspacker2
+packages/mspacker/         the tool (CLI `mspacker`) and the runtime user code imports
+packages/create-mspacker/  `npm create mspacker`: standalone (no dependency on the tool), owns the
+                              project template; released with the same version as mspacker
 examples/demo/                a real project used for manual end-to-end checks
 docs/                         the Starlight documentation site
 ```
@@ -18,13 +18,13 @@ pnpm build                              # compile to dist/ (the CLIs and the bui
 pnpm docs                               # docs dev server
 ```
 
-In `examples/demo`: `npx mcjs2 gen`, `npx mcjs2 build`, `npx mcjs2 dev`.
+In `examples/demo`: `npx mspacker gen`, `npx mspacker build`, `npx mspacker dev`.
 
 ## How it works
 
 1. **gen** (`src/codegen/emit.ts`): find or download the server jar (`src/env/`), run Minecraft's
    datagen (`src/datagen/run.ts`, cached per jar) and turn `commands.json` + `registries.json` into
-   `.mcjs2/gen/` (`src/codegen/generate.ts`). The generated `$` is typed with one interface per
+   `.mspacker/gen/` (`src/codegen/generate.ts`). The generated `$` is typed with one interface per
    command tree node: literals are properties, runs of arguments are call signatures, redirects reuse
    the target's interface (that's how `execute ... run` works without special cases).
 2. **build** (`src/build/build.ts`): esbuild bundles `src/`, and `transform.ts` injects metadata
@@ -52,7 +52,7 @@ In `examples/demo`: `npx mcjs2 gen`, `npx mcjs2 build`, `npx mcjs2 dev`.
    old folder names.
 5. **dev** (`src/dev/`): watch, rebuild into the server world or a save, `/reload` over RCON.
 
-State shared between copies of the runtime module lives on `globalThis` (`Symbol.for("mcjspacker2.*")`).
+State shared between copies of the runtime module lives on `globalThis` (`Symbol.for("mspacker.*")`).
 
 ## Argument types (parsers)
 
@@ -66,7 +66,7 @@ Every command argument names a brigadier parser (`minecraft:vec3`, `minecraft:co
 
 `ctx.packFormat` is how parsers follow format changes between versions (`FORMAT_*` constants).
 Users can override any parser from their config (`parsers`), which is the escape hatch for new
-Minecraft versions; when a version adds a parser we don't know, `mcjs2 gen` warns and types it as
+Minecraft versions; when a version adds a parser we don't know, `mspacker gen` warns and types it as
 `string`.
 
 When adding or changing a parser: add unit tests in `test/parsers.test.ts`, give it `examples`, and
@@ -80,10 +80,10 @@ download, datagen, codegen, strict `tsc`, build, then a real server must load th
 (`test/matrix/sample/`, files can declare `// @requires <command path>`) and run its functions.
 
 ```sh
-MCJS2_MATRIX=1 pnpm vitest run test/matrix                                   # all versions
-MCJS2_MATRIX=1 MCJS2_MATRIX_VERSIONS=1.21.4,26.3 pnpm vitest run test/matrix  # some versions
-MCJS2_MATRIX=1 MCJS2_MATRIX_SERVER=0 pnpm vitest run test/matrix             # no servers
-MCJS2_MATRIX=1 MCJS2_MATRIX_CONCURRENCY=10 pnpm vitest run test/matrix       # parallelism (default 6)
+MSPACKER_MATRIX=1 pnpm vitest run test/matrix                                   # all versions
+MSPACKER_MATRIX=1 MSPACKER_MATRIX_VERSIONS=1.21.4,26.3 pnpm vitest run test/matrix  # some versions
+MSPACKER_MATRIX=1 MSPACKER_MATRIX_SERVER=0 pnpm vitest run test/matrix             # no servers
+MSPACKER_MATRIX=1 MSPACKER_MATRIX_CONCURRENCY=10 pnpm vitest run test/matrix       # parallelism (default 6)
 ```
 
 It builds the package first and tests `dist/`. Older versions need older Java: each version uses the
@@ -105,7 +105,7 @@ codegen or the runtime; it's the only check that the output is valid Minecraft.
 ## Conventions
 
 - TypeScript is strict (`tsconfig.base.json`) minus options that make code harder to read.
-- Everything users import (`#mc` and `mcjspacker2`) has a doc comment: the docs' API reference is
+- Everything users import (`#mc` and `mspacker`) has a doc comment: the docs' API reference is
   generated from them by TypeDoc (`starlight-typedoc`) on every docs build. Mark helpers that only
   generated code uses with `@internal`. TypeDoc needs TypeScript's JS API, so the docs package has
   its own TypeScript 6 just for that.

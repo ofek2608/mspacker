@@ -6,15 +6,15 @@ description: Create a project, generate the command library and build your first
 ## Requirements
 
 - Node.js 22.22 or newer.
-- Java, for running the Minecraft server. mcjspacker2 prefers the Java runtime the Minecraft
+- Java, for running the Minecraft server. MSPacker prefers the Java runtime the Minecraft
   launcher installed for your version, then `JAVA_HOME`, then `java` on your `PATH`. See
   [`java`](/reference/configuration/#java).
 
 ## Create a project
 
 ```sh
-npm create mcjspacker2@latest
-# or: pnpm create mcjspacker2 / yarn create mcjspacker2 / bun create mcjspacker2
+npm create mspacker@latest
+# or: pnpm create mspacker / yarn create mspacker / bun create mspacker
 ```
 
 The setup asks for:
@@ -34,7 +34,7 @@ commands from it.
 To skip the questions, pass the answers as flags:
 
 ```sh
-npm create mcjspacker2@latest my-pack -- --version 26.3 --namespace mypack --yes
+npm create mspacker@latest my-pack -- --version 26.3 --namespace mypack --yes
 ```
 
 | Flag | Meaning |
@@ -51,16 +51,16 @@ npm create mcjspacker2@latest my-pack -- --version 26.3 --namespace mypack --yes
 Run it in the project's folder:
 
 ```sh
-npm create mcjspacker2@latest .
+npm create mspacker@latest .
 ```
 
-Existing files are kept: it adds `mcjs2.config.ts`, the `#mc` import, scripts and dependencies in
+Existing files are kept: it adds `mspacker.config.ts`, the `#mc` import, scripts and dependencies in
 `package.json`, `tsconfig.json`, `.gitignore` entries and `src/main.ts`.
 
 ## Generate, build, run
 
 ```sh
-npm run gen     # generate the typed command library into .mcjs2/gen
+npm run gen     # generate the typed command library into .mspacker/gen
 npm run build   # build the data pack into dist/<name>
 npm run dev     # rebuild into a dev server on every save and /reload it
 ```

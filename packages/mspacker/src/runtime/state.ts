@@ -58,7 +58,7 @@ interface TagRecord {
 
 export interface State {
   spec: NamespaceSpec;
-  /** Building with `mcjs2 dev`. */
+  /** Building with `mspacker dev`. */
   dev: boolean;
   /** Version info for parsers (serialize/test may depend on the game version). */
   ctx: ParserContext;
@@ -77,12 +77,12 @@ export interface State {
   resources: Map<string, { registry: string; id: string; data: unknown }>;
 }
 
-const KEY = Symbol.for("mcjspacker2.state");
-const META_KEY = Symbol.for("mcjspacker2.meta");
+const KEY = Symbol.for("mspacker.state");
+const META_KEY = Symbol.for("mspacker.meta");
 
 type G = typeof globalThis & { [KEY]?: State; [META_KEY]?: (fn: Function, meta: FnMeta) => Function };
 
-const DEV_KEY = Symbol.for("mcjspacker2.dev");
+const DEV_KEY = Symbol.for("mspacker.dev");
 
 type DevGlobal = typeof globalThis & { [DEV_KEY]?: { value: boolean; listeners: Set<(v: boolean) => void> } };
 
@@ -105,7 +105,7 @@ export interface PackInfo {
   functionPrefix: string;
 }
 
-const INFO_KEY = Symbol.for("mcjspacker2.packInfo");
+const INFO_KEY = Symbol.for("mspacker.packInfo");
 type InfoGlobal = typeof globalThis & { [INFO_KEY]?: { value: PackInfo; listeners: Set<(v: PackInfo) => void> } };
 
 /** Shared namespace info (`__NAMESPACE__`, `__FUNCTION_PREFIX__`): every copy of the runtime subscribes. */
@@ -149,7 +149,7 @@ export function resetState(
   };
   const g = globalThis as G;
   g[KEY] = state;
-  // Called by instrumented user code: `__mcjs_m(fn, meta)`.
+  // Called by instrumented user code: `__msp_m(fn, meta)`.
   g[META_KEY] = (fn, meta) => {
     if (typeof fn === "function" && !state.metas.has(fn)) state.metas.set(fn, meta);
     return fn;
@@ -159,7 +159,7 @@ export function resetState(
 
 export function getState(): State {
   const s = (globalThis as G)[KEY];
-  if (!s) throw new Error("mcjspacker2: commands can only be used while building a datapack (run `mcjs2 build`).");
+  if (!s) throw new Error("mspacker: commands can only be used while building a datapack (run `mspacker build`).");
   return s;
 }
 
@@ -291,13 +291,13 @@ function hash(text: string): string {
   return createHash("sha1").update(text).digest("hex");
 }
 
-/** Placeholder names of anonymous functions: `<ns>:mcjs2_pending/<n>/fn`. */
+/** Placeholder names of anonymous functions: `<ns>:mspacker_pending/<n>/fn`. */
 function placeholder(n: number): string {
-  return `${getState().spec.ns}:mcjs2_pending/${n}/fn`;
+  return `${getState().spec.ns}:mspacker_pending/${n}/fn`;
 }
 
 function placeholderPattern(): RegExp {
-  return new RegExp(`${getState().spec.ns.replace(/[.]/g, "\\.")}:mcjs2_pending/(\\d+)/fn`, "g");
+  return new RegExp(`${getState().spec.ns.replace(/[.]/g, "\\.")}:mspacker_pending/(\\d+)/fn`, "g");
 }
 
 /**
@@ -339,7 +339,7 @@ function drainQueue(): void {
     const fn = s.queue.shift()!;
     const lines = recordBody(fn);
     const id = s.ids.get(fn)!;
-    const anon = /^.*:mcjs2_pending\/(\d+)\/fn$/.exec(id);
+    const anon = /^.*:mspacker_pending\/(\d+)\/fn$/.exec(id);
     const rec = anon ? undefined : s.functions.get(id)!;
     if (anon) s.anonymous[Number(anon[1])]!.lines = lines;
     else if (rec!.owner === fn) rec!.lines = lines;
@@ -442,7 +442,7 @@ function resolveAnonymous(): (text: string) => string {
   }
 
   for (const [fn, id] of s.ids) {
-    const m = /:mcjs2_pending\/(\d+)\/fn$/.exec(id);
+    const m = /:mspacker_pending\/(\d+)\/fn$/.exec(id);
     if (m) s.ids.set(fn, names[Number(m[1])]!);
   }
   return replace;

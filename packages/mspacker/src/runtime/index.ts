@@ -2,7 +2,7 @@
  * Everything you import from `#mc` besides the commands: helpers for tags, files, function names,
  * macros and NBT, and the types of command arguments.
  *
- * `#mc` also exports what `mcjs2 gen` generates for your Minecraft version: `$` (every command),
+ * `#mc` also exports what `mspacker gen` generates for your Minecraft version: `$` (every command),
  * `MINECRAFT_VERSION`, and the registry id types (`Id<"item">`, ...).
  *
  * @packageDocumentation
@@ -23,7 +23,7 @@ export { nbt, snbt, type RawSnbt, type Suffix, type TypedArray, type TypedNumber
 export { createRoot, literalName, type TreeNode } from "./command.js";
 
 /**
- * `true` while building with `mcjs2 dev`, `false` for `mcjs2 build`. Use it for debug output:
+ * `true` while building with `mspacker dev`, `false` for `mspacker build`. Use it for debug output:
  *
  *     if (__DEV__) $.say("debug: round started");
  */
@@ -32,11 +32,11 @@ devFlag().listeners.add((value) => {
   __DEV__ = value;
 });
 
-/** Your pack's namespace, e.g. `mypack` (from `namespace` in mcjs2.config.ts). */
+/** Your pack's namespace, e.g. `mypack` (from `namespace` in mspacker.config.ts). */
 export let __NAMESPACE__: string = packInfo().value.namespace;
 /**
  * Where your function names start: `mypack:`, or `mypack:generated/` when the namespace in
- * mcjs2.config.ts has a folder (`mypack:generated/`).
+ * mspacker.config.ts has a folder (`mypack:generated/`).
  */
 export let __FUNCTION_PREFIX__: string = packInfo().value.functionPrefix;
 packInfo().listeners.add((info) => {

@@ -8,7 +8,7 @@ import type { GenMeta } from "../build/build.js";
 import { generate } from "./generate.js";
 import { setParserOverrides } from "../runtime/parsers.js";
 
-/** Locate the server, run datagen (cached), and write the library to .mcjs2/gen. */
+/** Locate the server, run datagen (cached), and write the library to .mspacker/gen. */
 export async function generateLibrary(cfg: ResolvedConfig, opts: { force?: boolean; log: (s: string) => void }) {
   const server = await resolveServer(cfg.projectDir, cfg.version, cfg.server, { log: opts.log });
   const java = await findJavaFor(cfg.version, { configured: cfg.java, minecraftRoot: cfg.minecraftRoot });

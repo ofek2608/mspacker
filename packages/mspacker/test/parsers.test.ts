@@ -10,7 +10,7 @@ import { collectOutput, resetState, type FnMeta } from "../src/runtime/state.js"
 const fixture = (name: string) => JSON.parse(readFileSync(new URL(`./fixtures/${name}`, import.meta.url), "utf8"));
 const commands = fixture("commands.json");
 const registries = fixture("registries.json");
-const meta = (fn: Function, m: FnMeta) => (globalThis as any)[Symbol.for("mcjspacker2.meta")](fn, m);
+const meta = (fn: Function, m: FnMeta) => (globalThis as any)[Symbol.for("mspacker.meta")](fn, m);
 
 afterEach(() => setParserOverrides(undefined));
 

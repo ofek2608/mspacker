@@ -9,8 +9,8 @@
  * into plain strings; `` macro`...` `` builds text from them instead.
  */
 
-const NBT = Symbol.for("mcjspacker2.nbt");
-const MACRO = Symbol.for("mcjspacker2.macro");
+const NBT = Symbol.for("mspacker.nbt");
+const MACRO = Symbol.for("mspacker.macro");
 declare const IS_MACRO: unique symbol;
 declare const AS: unique symbol;
 
@@ -65,7 +65,7 @@ interface Context {
   owners: { token: object; where: string }[];
   collector: { used: boolean } | null;
 }
-const CONTEXT = Symbol.for("mcjspacker2.macroContext");
+const CONTEXT = Symbol.for("mspacker.macroContext");
 function context(): Context {
   const g = globalThis as typeof globalThis & { [CONTEXT]?: Context };
   return (g[CONTEXT] ??= { owners: [], collector: null });

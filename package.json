@@ -1,5 +1,5 @@
 {
-  "name": "mcjspacker2-workspace",
+  "name": "mspacker-workspace",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@12.15.0",
@@ -7,7 +7,7 @@
     "build": "pnpm -r --filter './packages/*' run build",
     "test": "pnpm -r --filter './packages/*' run test",
     "typecheck": "pnpm -r run typecheck",
-    "docs": "pnpm --filter mcjspacker2-docs dev",
-    "docs:build": "pnpm --filter mcjspacker2-docs build"
+    "docs": "pnpm --filter mspacker-docs dev",
+    "docs:build": "pnpm --filter mspacker-docs build"
   }
 }

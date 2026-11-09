@@ -1,10 +1,10 @@
 {
-  "name": "mcjspacker2",
+  "name": "mspacker",
   "version": "0.1.0",
   "description": "Write Minecraft datapacks in TypeScript with a command library generated from the game's own datagen.",
   "type": "module",
   "bin": {
-    "mcjs2": "./bin/mcjs2.js"
+    "mspacker": "./bin/mspacker.js"
   },
   "exports": {
     ".": {

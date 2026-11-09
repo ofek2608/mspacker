@@ -11,8 +11,8 @@ export interface JarVersion {
   pack_version: number | { data?: number; data_major?: number; data_minor?: number; resource?: number };
 }
 
-/** Written next to a jar that mcjs2 installed, so it can be replaced on version changes. */
-const INSTALLED_MARKER = ".mcjs2-installed.json";
+/** Written next to a jar that MSPacker installed, so it can be replaced on version changes. */
+const INSTALLED_MARKER = ".mspacker-installed.json";
 
 export interface ServerInfo {
   /** Server directory (for gen it may not exist when only a downloaded jar is used). */
@@ -28,9 +28,9 @@ export interface ServerConfig {
   download?: boolean;
 }
 
-/** Server dir: MCJS2_SERVER_DIR env, then config `server.dir`, then `<project>/server`. */
+/** Server dir: MSPACKER_SERVER_DIR env, then config `server.dir`, then `<project>/server`. */
 export function findServerDir(projectDir: string, configured?: string): string {
-  const fromEnv = process.env.MCJS2_SERVER_DIR;
+  const fromEnv = process.env.MSPACKER_SERVER_DIR;
   if (fromEnv) return resolve(fromEnv);
   return resolve(projectDir, configured ?? "server");
 }
@@ -101,7 +101,7 @@ export async function resolveServer(
   if (configured?.download === false) {
     throw new Error(
       `No Minecraft ${version} server jar found in ${dir} and downloads are disabled (server.download: false).\n` +
-        `Put the server jar in your server directory and point server.dir or MCJS2_SERVER_DIR at it.`,
+        `Put the server jar in your server directory and point server.dir or MSPACKER_SERVER_DIR at it.`,
     );
   }
   let jar = await downloadServerJar(version, opts.log);

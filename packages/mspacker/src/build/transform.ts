@@ -1,7 +1,7 @@
 /**
  * Instruments user source so the runtime knows each function's file, name and JSDoc tags:
- *   function declarations   -> `;__mcjs_m(Name, {...});` appended after the declaration
- *   function/arrow exprs    -> wrapped as `__mcjs_w(<expr>, {...})`
+ *   function declarations   -> `;__msp_m(Name, {...});` appended after the declaration
+ *   function/arrow exprs    -> wrapped as `__msp_w(<expr>, {...})`
  *
  * JSDoc tags:
  *   @mcfunction            entry point (emitted even if never referenced)
@@ -22,7 +22,7 @@ interface AnyNode {
 }
 
 export const HEADER =
-  'const __mcjs_m = globalThis[Symbol.for("mcjspacker2.meta")], __mcjs_w = (f, m) => (__mcjs_m(f, m), f); ';
+  'const __msp_m = globalThis[Symbol.for("mspacker.meta")], __msp_w = (f, m) => (__msp_m(f, m), f); ';
 
 type Tags = Pick<FnMeta, "mcfunction" | "load" | "tick" | "dev">;
 
@@ -107,7 +107,7 @@ export function instrument(code: string, relFile: string, opts: { typescript: bo
         // created anew on each call, so naming it would give every copy the same name.
         const name = list.type === "Program" ? (id.name as string) : undefined;
         const tags = jsdocTags(node, isExport ? parent : undefined);
-        inserts.push({ pos: stmt.end, text: `;__mcjs_m(${id.name as string}, ${meta(node, name, tags, id.name as string)});`, group: 1, span: 0 });
+        inserts.push({ pos: stmt.end, text: `;__msp_m(${id.name as string}, ${meta(node, name, tags, id.name as string)});`, group: 1, span: 0 });
       }
     } else if (node.type === "ArrowFunctionExpression" || node.type === "FunctionExpression") {
       let name: string | undefined;
@@ -131,7 +131,7 @@ export function instrument(code: string, relFile: string, opts: { typescript: bo
         tags = jsdocTags(node);
       }
       const span = node.end - node.start;
-      inserts.push({ pos: node.start, text: "__mcjs_w(", group: 2, span });
+      inserts.push({ pos: node.start, text: "__msp_w(", group: 2, span });
       inserts.push({ pos: node.end, text: `, ${meta(node, name, tags, hint)})`, group: 0, span });
     }
 

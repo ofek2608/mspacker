@@ -57,7 +57,7 @@ export function Countdown() {
 
 tag("function", "demo:all", [Greet, Countdown, "demo:handwritten"]);
 
-// Only in `mcjs2 dev` builds: /function demo:generated/main/debug_scores
+// Only in `mspacker dev` builds: /function demo:generated/main/debug_scores
 /** @dev @mcfunction */
 export function DebugScores() {
   $.tellraw("@a", { text: "kills:", color: "gray" });

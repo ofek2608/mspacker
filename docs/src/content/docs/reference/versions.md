@@ -3,22 +3,22 @@ title: Versions
 description: Which Minecraft versions work, and how that's tested.
 ---
 
-mcjspacker2 works with every Minecraft version that has data packs: 1.13 and later, snapshots, and
-the April Fools versions that support data packs. mcjspacker2 reads the list of commands from the
+MSPacker works with every Minecraft version that has data packs: 1.13 and later, snapshots, and
+the April Fools versions that support data packs. MSPacker reads the list of commands from the
 Minecraft version itself, so new commands work as soon as the version is out.
 
 ## Differences between versions
 
 Data packs changed over the years: folder names, the `pack.mcmeta` format, how text is written,
-some command words. mcjspacker2 writes your pack the way your version expects, so the same code
+some command words. MSPacker writes your pack the way your version expects, so the same code
 works across versions as long as the commands exist.
 
-If a new Minecraft version changes a command in a way mcjspacker2 doesn't know yet, you can
+If a new Minecraft version changes a command in a way MSPacker doesn't know yet, you can
 [teach it yourself](/reference/custom-parsers/).
 
 ## Tested versions
 
-mcjspacker2's test suite runs against real servers of these versions:
+MSPacker's test suite runs against real servers of these versions:
 
 - **Latest:** 26.4-snapshot-7, 26.3, 26.2, 26.1.2
 - **1.21 game drops:** 1.21.11, 1.21.10, 1.21.8, 1.21.5, 1.21.4, 1.21.3, 1.21.1

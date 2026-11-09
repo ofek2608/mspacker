@@ -1,4 +1,4 @@
-# mcjspacker2
+# MineScriptPacker
 
 Write Minecraft data packs in TypeScript, with autocomplete and error checking for every command of
 the exact Minecraft version you target, snapshots and April Fools versions included.
@@ -27,26 +27,26 @@ function Reward() {
 Each marked function becomes an `.mcfunction` (`mypack:main/start_round`), and functions it calls
 are added automatically.
 
-**Live reload:** `mcjs2 dev` rebuilds on every save and reloads the pack in game automatically, so your
+**Live reload:** `mspacker dev` rebuilds on every save and reloads the pack in game automatically, so your
 changes are in game within a moment.
 
 ## Quick start
 
 ```sh
-npm create mcjspacker2@latest
+npm create mspacker@latest
 cd my-datapack
 npm run dev   # starts a server; every save rebuilds and reloads in game
 ```
 
 `npm create` asks for a directory, namespace and Minecraft version, then sets everything up. To add
-mcjspacker2 to an existing project, run `npm create mcjspacker2@latest .` in it.
+MSPacker to an existing project, run `npm create mspacker@latest .` in it.
 
 | Command | |
 |---|---|
-| `mcjs2 gen` | Read the commands of your Minecraft version (downloads the official server jar once). |
-| `mcjs2 build [--zip]` | Build the data pack into `dist/`. |
-| `mcjs2 dev` | Start a dev server; every save rebuilds and reloads in game. |
-| `mcjs2 dev --save <world\|auto>` | Rebuild into a singleplayer world instead. |
+| `mspacker gen` | Read the commands of your Minecraft version (downloads the official server jar once). |
+| `mspacker build [--zip]` | Build the data pack into `dist/`. |
+| `mspacker dev` | Start a dev server; every save rebuilds and reloads in game. |
+| `mspacker dev --save <world\|auto>` | Rebuild into a singleplayer world instead. |
 
 ## Documentation
 

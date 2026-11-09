@@ -33,7 +33,7 @@ const TAG_RE = /^data\/[^/]+\/tags\/.+\.json$/;
 export function assemblePack(cfg: ResolvedConfig, meta: GenMeta, generated: Map<string, string>): { files: PackFiles; warnings: string[] } {
   const warnings: string[] = [];
   const files: PackFiles = new Map(generated);
-  files.set("pack.mcmeta", packMcmeta(cfg.description ?? `${cfg.name} (built with mcjspacker2)`, meta.packFormat));
+  files.set("pack.mcmeta", packMcmeta(cfg.description ?? `${cfg.name} (built with MSPacker)`, meta.packFormat));
 
   for (const abs of walkFiles(cfg.rawDir)) {
     const rel = relative(cfg.rawDir, abs).split(sep).join("/");
@@ -59,8 +59,8 @@ export function assemblePack(cfg: ResolvedConfig, meta: GenMeta, generated: Map<
 
 /** Write the pack into `target`, replacing it atomically-ish so stale files disappear. */
 export function writePackDir(target: string, files: PackFiles): void {
-  const stage = `${target}.mcjs2-tmp`;
-  const old = `${target}.mcjs2-old`;
+  const stage = `${target}.mspacker-tmp`;
+  const old = `${target}.mspacker-old`;
   rmSync(stage, { recursive: true, force: true });
   rmSync(old, { recursive: true, force: true });
   for (const [rel, data] of files) {

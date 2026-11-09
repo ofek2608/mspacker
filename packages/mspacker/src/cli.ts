@@ -7,8 +7,8 @@ import { writePackDir, writePackZip } from "./build/pack.js";
 import { dev } from "./dev/watch.js";
 import { existsSync } from "node:fs";
 
-const log = (s: string) => console.log(`[mcjs2] ${s}`);
-const cli = cac("mcjs2");
+const log = (s: string) => console.log(`[mspacker] ${s}`);
+const cli = cac("mspacker");
 
 cli.option("--cwd <dir>", "Project directory", { default: process.cwd() });
 
@@ -56,6 +56,6 @@ try {
   if (!cli.matchedCommand) cli.outputHelp();
   else await cli.runMatchedCommand();
 } catch (e) {
-  console.error(`[mcjs2] ${formatBuildError(e)}`);
+  console.error(`[mspacker] ${formatBuildError(e)}`);
   process.exit(1);
 }

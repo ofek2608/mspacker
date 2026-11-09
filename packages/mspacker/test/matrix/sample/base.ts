@@ -4,13 +4,13 @@ import { $, fnId, tag } from "#mc";
 
 /** @load */
 export function Init() {
-  $.scoreboard.objectives.add.mcjs2.dummy;
-  $.say("mcjs2-load-ok");
+  $.scoreboard.objectives.add.mspacker.dummy;
+  $.say("mspacker-load-ok");
 }
 
 /** @tick */
 export function Tick() {
-  $.execute.as("@a").if.score("@s", "mcjs2").matches("10..").run.give("@s", "diamond", 1);
+  $.execute.as("@a").if.score("@s", "mspacker").matches("10..").run.give("@s", "diamond", 1);
 }
 
 /** @mcfunction */
@@ -23,12 +23,12 @@ export function Commands() {
   $.setblock("0 64 0", "stone");
   $.effect.give("@a", "speed", 10, 1, true);
   $.summon("pig", "0 70 0", { NoAI: true, CustomName: '"pig"' });
-  $.scoreboard.players.set("#x").mcjs2(5);
-  $.team.add.mcjs2_team;
-  $.team.modify.mcjs2_team.color.red;
-  $.scoreboard.players.operation("#x", "mcjs2", "+=", "#x", "mcjs2");
-  $.execute.store.result.score("#y", "mcjs2").run.scoreboard.players.get("#x", "mcjs2");
-  $.execute.if.score("#x", "mcjs2")[">"]("#y", "mcjs2").run.say("gt");
+  $.scoreboard.players.set("#x").mspacker(5);
+  $.team.add.mspacker_team;
+  $.team.modify.mspacker_team.color.red;
+  $.scoreboard.players.operation("#x", "mspacker", "+=", "#x", "mspacker");
+  $.execute.store.result.score("#y", "mspacker").run.scoreboard.players.get("#x", "mspacker");
+  $.execute.if.score("#x", "mspacker")[">"]("#y", "mspacker").run.say("gt");
   $.execute.at("@p").run.function(() => {
     $.say("multi 1");
     $.say("multi 2");
@@ -39,7 +39,7 @@ export function Commands() {
   $.function(Helper);
   $("say raw");
   $(`function ${fnId(Helper)}`);
-  $.say("mcjs2-commands-ok");
+  $.say("mspacker-commands-ok");
 }
 
 export function Helper() {

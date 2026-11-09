@@ -3,16 +3,16 @@
   "private": true,
   "type": "module",
   "imports": {
-    "#mc": "./.mcjs2/gen/index.ts"
+    "#mc": "./.mspacker/gen/index.ts"
   },
   "scripts": {
-    "gen": "mcjs2 gen",
-    "build": "mcjs2 build",
-    "dev": "mcjs2 dev",
+    "gen": "mspacker gen",
+    "build": "mspacker build",
+    "dev": "mspacker dev",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "mcjspacker2": "workspace:*"
+    "mspacker": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^7.0.2"

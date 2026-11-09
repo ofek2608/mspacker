@@ -9,7 +9,7 @@ import { collectOutput, resetState, type FnMeta } from "../src/runtime/state.js"
 
 const $ = createRoot(compactTree(JSON.parse(readFileSync(new URL("./fixtures/commands.json", import.meta.url), "utf8")))) as any;
 
-const meta = (fn: Function, m: FnMeta) => (globalThis as any)[Symbol.for("mcjspacker2.meta")](fn, m);
+const meta = (fn: Function, m: FnMeta) => (globalThis as any)[Symbol.for("mspacker.meta")](fn, m);
 
 function build(packFormat?: number): Record<string, string> {
   return Object.fromEntries(collectOutput({ packFormat }).files);

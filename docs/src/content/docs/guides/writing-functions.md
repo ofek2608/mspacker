@@ -83,8 +83,8 @@ say 1...
 
 ## Debug-only commands
 
-`__DEV__` is `true` while you work with [`mcjs2 dev`](/guides/dev-mode/) and `false` in
-`mcjs2 build`, so debug messages never reach the finished pack:
+`__DEV__` is `true` while you work with [`mspacker dev`](/guides/dev-mode/) and `false` in
+`mspacker build`, so debug messages never reach the finished pack:
 
 ```ts
 import { $, __DEV__ } from "#mc";
@@ -98,7 +98,7 @@ export function Setup() {
 
 ### Debug-only functions
 
-Add `@dev` to make a whole function exist only in `mcjs2 dev` builds. It works together with the
+Add `@dev` to make a whole function exist only in `mspacker dev` builds. It works together with the
 other comments:
 
 ```ts
@@ -115,7 +115,7 @@ export function ShowTickCounter() {
 
 `/function mypack:main/debug_scores` works while developing, and the function isn't in the finished
 pack. Other functions can only call it from debug-only code, like inside `if (__DEV__)`; otherwise
-`mcjs2 build` stops and tells you where.
+`mspacker build` stops and tells you where.
 
 ## Calling other functions
 
@@ -157,7 +157,7 @@ object field, starts with that name, so it's easier to recognize: `const step = 
 `mypack:main/__anon/step_77186eb6`.
 
 The name is the same on every build, but it can change whenever the function changes (or with a new
-mcjspacker2 version), so don't use it from outside your pack. If something else needs to call it,
+MSPacker version), so don't use it from outside your pack. If something else needs to call it,
 declare it at the top of a file or [give it a name](/guides/function-ids/#choosing-a-name).
 
 ```ts

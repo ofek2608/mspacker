@@ -1,5 +1,5 @@
 /**
- * Interactive project setup (`npm create mcjspacker2`): asks for the directory, namespace, Minecraft version
+ * Interactive project setup (`npm create mspacker`): asks for the directory, namespace, Minecraft version
  * and description, scaffolds the project, then optionally installs dependencies and generates the library.
  */
 import { spawnSync } from "node:child_process";
@@ -93,7 +93,7 @@ async function pickVersion(): Promise<string> {
 }
 
 export async function create(args: CreateArgs): Promise<void> {
-  p.intro("mcjspacker2 — TypeScript data packs");
+  p.intro("MineScriptPacker — TypeScript data packs");
 
   const dirInput =
     args.dir ??
@@ -102,7 +102,7 @@ export async function create(args: CreateArgs): Promise<void> {
       : check(await p.text({ message: "Project directory", placeholder: "my-datapack", defaultValue: "my-datapack" })));
   const dir = resolve(dirInput);
   if (existsSync(dir) && readdirSync(dir).length > 0 && !args.yes) {
-    const go = check(await p.confirm({ message: `${dirInput} is not empty. Add mcjspacker2 to it anyway? Existing files are kept.`, initialValue: false }));
+    const go = check(await p.confirm({ message: `${dirInput} is not empty. Add MSPacker to it anyway? Existing files are kept.`, initialValue: false }));
     if (!go) bail();
   }
 
@@ -168,7 +168,7 @@ export async function create(args: CreateArgs): Promise<void> {
   p.outro("Happy packing!");
 }
 
-/** Parse `create-mcjspacker2 [dir] [--version x] [--namespace x] [--description x] [--yes] [--no-install] [--no-gen]`. */
+/** Parse `create-mspacker [dir] [--version x] [--namespace x] [--description x] [--yes] [--no-install] [--no-gen]`. */
 export function parseCreateArgs(argv: string[]): CreateArgs {
   const out: CreateArgs = {};
   for (let i = 0; i < argv.length; i++) {
@@ -188,7 +188,7 @@ export function parseCreateArgs(argv: string[]): CreateArgs {
     else if (a === "--no-gen") out.gen = false;
     else if (a === "--help" || a === "-h") {
       console.log(
-        "Usage: create-mcjspacker2 [dir] [--version <id>] [--namespace <ns>] [--description <text>] [--yes] [--no-install] [--no-gen]",
+        "Usage: create-mspacker [dir] [--version <id>] [--namespace <ns>] [--description <text>] [--yes] [--no-install] [--no-gen]",
       );
       process.exit(0);
     } else if (a.startsWith("-")) throw new Error(`Unknown option ${a}`);

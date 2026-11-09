@@ -1,11 +1,11 @@
 ---
 title: Configuration
-description: Every option in mcjs2.config.ts.
+description: Every option in mspacker.config.ts.
 ---
 
 ```ts
-// mcjs2.config.ts
-import { defineConfig } from "mcjspacker2";
+// mspacker.config.ts
+import { defineConfig } from "mspacker";
 
 export default defineConfig({
   version: "26.3",
@@ -15,13 +15,13 @@ export default defineConfig({
 });
 ```
 
-The config can also be `mcjs2.config.mts`, `.js` or `.mjs`.
+The config can also be `mspacker.config.mts`, `.js` or `.mjs`.
 
 ### `version`
 
 **Required.** The Minecraft version id, exactly as in the launcher: `"26.3"`,
 `"26.4-snapshot-7"`, `"1.20.4"`, `"24w14potato"`. It decides which server jar is used, what the
-command library contains and the `pack.mcmeta` format. Run `mcjs2 gen` after changing it.
+command library contains and the `pack.mcmeta` format. Run `mspacker gen` after changing it.
 
 ### `namespace`
 
@@ -59,15 +59,15 @@ Build output directory. Default `"dist"`.
 
 | Option | Default | |
 |---|---|---|
-| `dir` | `"server"` | Dev server directory. `MCJS2_SERVER_DIR` overrides it. |
+| `dir` | `"server"` | Dev server directory. `MSPACKER_SERVER_DIR` overrides it. |
 | `jar` | `server.jar`, or the only `*.jar` | Jar file name in `dir`. |
 | `download` | `true` | Download the official jar when `dir` has none. |
 | `host` | `"127.0.0.1"` | RCON host. |
-| `jvmArgs` | `[]` | Extra JVM arguments for the server `mcjs2 dev` starts, e.g. `["-Xmx2G"]`. |
+| `jvmArgs` | `[]` | Extra JVM arguments for the server `mspacker dev` starts, e.g. `["-Xmx2G"]`. |
 
 ### `java`
 
-Path to the `java` executable. By default, mcjspacker2 uses the Java runtime the Minecraft
+Path to the `java` executable. By default, MSPacker uses the Java runtime the Minecraft
 launcher installed for your version (the same Java the game runs on), then `JAVA_HOME`, then `java`
 on the `PATH`. Old versions need old Java (1.16 and earlier run on Java 8), so launching a version
 once in the launcher is the easiest way to get the right runtime.
@@ -86,7 +86,7 @@ Advanced: describe values a new Minecraft version added or changed. See
 
 | Variable | |
 |---|---|
-| `MCJS2_SERVER_DIR` | Overrides `server.dir`. |
+| `MSPACKER_SERVER_DIR` | Overrides `server.dir`. |
 | `MINECRAFT_ROOT` | Overrides `minecraftRoot`. |
 | `JAVA_HOME` | Java to use when `java` isn't set. |
-| `MCJS2_DEBUG` | Set to `1` to show full stack traces for build errors. |
+| `MSPACKER_DEBUG` | Set to `1` to show full stack traces for build errors. |

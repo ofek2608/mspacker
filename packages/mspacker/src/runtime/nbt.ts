@@ -1,7 +1,7 @@
 // SNBT serialization with typed wrappers for numeric tags and arrays.
 import type { MacroArg } from "./macro.js";
 
-const NBT = Symbol.for("mcjspacker2.nbt");
+const NBT = Symbol.for("mspacker.nbt");
 
 /** The letter after an NBT number: byte, short, int, long, float, double. */
 export type Suffix = "b" | "s" | "" | "L" | "f" | "d";

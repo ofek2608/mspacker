@@ -112,7 +112,7 @@ atPlayers.run.say("two");   // execute as @a at @s run say two
 
 ## Writing a command as text
 
-Calling `$` itself writes a line exactly as you give it. Use it for anything mcjspacker2 doesn't
+Calling `$` itself writes a line exactly as you give it. Use it for anything MSPacker doesn't
 cover, or for macro lines (usually [macro functions](/guides/macros/) are easier):
 
 ```ts
@@ -142,4 +142,4 @@ still listed, with a note, but only work from the server console.
 
 The commands you get match the Minecraft version in your [config](/reference/configuration/#version):
 commands that don't exist in your version aren't offered, and values are written the way your
-version expects. Run `mcjs2 gen` after changing versions.
+version expects. Run `mspacker gen` after changing versions.

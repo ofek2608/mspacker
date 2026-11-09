@@ -16,7 +16,7 @@ datapack/
   data/minecraft/tags/function/load.json
 ```
 
-Tags you write here are combined with the ones mcjspacker2 creates, so a `load.json` here and
+Tags you write here are combined with the ones MSPacker creates, so a `load.json` here and
 `@load` functions work together.
 
 Use the folder names of your version: before 1.21 (pack format 45) they are plural, like
@@ -53,7 +53,7 @@ The first argument is the folder under `data/<namespace>/`: `advancement`, `pred
 
 ## Commands as text
 
-Calling `$` writes a command exactly as you give it. Use it for anything mcjspacker2 doesn't cover,
+Calling `$` writes a command exactly as you give it. Use it for anything MSPacker doesn't cover,
 or for macro lines (usually [macro functions](/guides/macros/) are easier):
 
 ```ts

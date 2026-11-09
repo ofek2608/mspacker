@@ -1,10 +1,10 @@
 {
-  "name": "create-mcjspacker2",
+  "name": "create-mspacker",
   "version": "0.1.0",
-  "description": "Create a mcjspacker2 project: Minecraft data packs written in TypeScript.",
+  "description": "Create an MSPacker project: Minecraft data packs written in TypeScript.",
   "type": "module",
   "bin": {
-    "create-mcjspacker2": "./bin/create-mcjspacker2.js"
+    "create-mspacker": "./bin/create-mspacker.js"
   },
   "files": [
     "bin",

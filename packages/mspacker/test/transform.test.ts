@@ -6,7 +6,7 @@ const run = (code: string) => instrument(code, "dir/file.ts", { typescript: true
 describe("instrument", () => {
   it("registers declarations with JSDoc tags", () => {
     const out = run(`/** @mcfunction */\nexport function Foo(): void {}\n`);
-    expect(out).toContain(`;__mcjs_m(Foo, {"file":"dir/file.ts","name":"Foo","line":2,"mcfunction":true});`);
+    expect(out).toContain(`;__msp_m(Foo, {"file":"dir/file.ts","name":"Foo","line":2,"mcfunction":true});`);
   });
 
   it("parses id overrides and load/tick", () => {
@@ -21,9 +21,9 @@ describe("instrument", () => {
 
   it("hints object keys, not computed ones", () => {
     const out = run(`export function F() {\n  return { onClick: () => 1, [k]: () => 2, "on-hover": () => 3 };\n}\n`);
-    expect(out).toContain(`onClick: __mcjs_w(() => 1, {"file":"dir/file.ts","hint":"onClick","line":2})`);
-    expect(out).toContain(`[k]: __mcjs_w(() => 2, {"file":"dir/file.ts","line":2})`);
-    expect(out).toContain(`"on-hover": __mcjs_w(() => 3, {"file":"dir/file.ts","hint":"on-hover","line":2})`);
+    expect(out).toContain(`onClick: __msp_w(() => 1, {"file":"dir/file.ts","hint":"onClick","line":2})`);
+    expect(out).toContain(`[k]: __msp_w(() => 2, {"file":"dir/file.ts","line":2})`);
+    expect(out).toContain(`"on-hover": __msp_w(() => 3, {"file":"dir/file.ts","hint":"on-hover","line":2})`);
   });
 
   it("reads tags only at the start of a line or after another tag, never in prose or code", () => {
@@ -38,7 +38,7 @@ describe("instrument", () => {
   it("wraps arrows, naming them after their variable and nesting correctly", () => {
     const out = run(`/** @load */\nexport const Bar = () => () => 1;\n`);
     expect(out).toBe(
-      `/** @load */\nexport const Bar = __mcjs_w(() => __mcjs_w(() => 1, {"file":"dir/file.ts","line":2}), {"file":"dir/file.ts","name":"Bar","line":2,"load":true});\n`,
+      `/** @load */\nexport const Bar = __msp_w(() => __msp_w(() => 1, {"file":"dir/file.ts","line":2}), {"file":"dir/file.ts","name":"Bar","line":2,"load":true});\n`,
     );
   });
 
@@ -46,17 +46,17 @@ describe("instrument", () => {
     const out = run(
       `export function Outer() {\n  function inner() {}\n  const step = () => 1;\n  const named = function fn() {};\n}\nconst top = function own() {};\n`,
     );
-    expect(out).toContain(`;__mcjs_m(Outer, {"file":"dir/file.ts","name":"Outer","line":1});`);
+    expect(out).toContain(`;__msp_m(Outer, {"file":"dir/file.ts","name":"Outer","line":1});`);
     // Nested ones only get a hint for their anonymous name.
-    expect(out).toContain(`;__mcjs_m(inner, {"file":"dir/file.ts","hint":"inner","line":2});`);
-    expect(out).toContain(`const step = __mcjs_w(() => 1, {"file":"dir/file.ts","hint":"step","line":3})`);
-    expect(out).toContain(`const named = __mcjs_w(function fn() {}, {"file":"dir/file.ts","hint":"fn","line":4})`);
+    expect(out).toContain(`;__msp_m(inner, {"file":"dir/file.ts","hint":"inner","line":2});`);
+    expect(out).toContain(`const step = __msp_w(() => 1, {"file":"dir/file.ts","hint":"step","line":3})`);
+    expect(out).toContain(`const named = __msp_w(function fn() {}, {"file":"dir/file.ts","hint":"fn","line":4})`);
     expect(out).toContain(`{"file":"dir/file.ts","name":"own","line":6}`);
   });
 
   it("leaves untagged functions as plain metadata", () => {
     const out = run(`function helper<T>(x: T) { return x }\n`);
-    expect(out).toContain(`;__mcjs_m(helper, {"file":"dir/file.ts","name":"helper","line":1});`);
+    expect(out).toContain(`;__msp_m(helper, {"file":"dir/file.ts","name":"helper","line":1});`);
     expect(out).not.toContain("mcfunction");
   });
 

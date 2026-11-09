@@ -4,10 +4,10 @@ description: Start a dev server, rebuild on every save and reload in game automa
 ---
 
 ```sh
-npm run dev    # or: npx mcjs2 dev
+npm run dev    # or: npx mspacker dev
 ```
 
-`mcjs2 dev` starts a Minecraft server for your version and builds your pack into its world. Then it
+`mspacker dev` starts a Minecraft server for your version and builds your pack into its world. Then it
 watches `src/`, `datapack/` and the config: **every time you save, the pack is rebuilt and reloaded
 in game automatically**. If a build fails, the error is printed with its source location and the
 previous pack keeps running.
@@ -17,8 +17,8 @@ The server runs in the same terminal, so you can type server commands there. Sto
 of starting another.
 
 If you change `version` in the config while dev is running, it regenerates the commands for the
-new version and swaps the server jar (if mcjspacker2 downloaded it). Stop the server and run
-`mcjs2 dev` again to play on the new version.
+new version and swaps the server jar (if MSPacker downloaded it). Stop the server and run
+`mspacker dev` again to play on the new version.
 
 Dev builds set [`__DEV__`](/guides/writing-functions/#debug-only-commands) to `true` and include
 [`@dev` functions](/guides/writing-functions/#debug-only-functions), so you can add commands and
@@ -26,13 +26,13 @@ functions that only exist while developing.
 
 ## The server directory
 
-The dev server lives in `server/` by default (`server.dir` in the config, or the `MCJS2_SERVER_DIR`
+The dev server lives in `server/` by default (`server.dir` in the config, or the `MSPACKER_SERVER_DIR`
 environment variable).
 
 - **Jar.** If the directory has a server jar, it is used as-is, and its version must match
   `version` in the config. If it has none, the official jar for your version is downloaded from
-  Mojang, verified, cached in `~/.cache/mcjspacker2/jars/<version>`, and copied in. When you change
-  `version`, a jar that mcjspacker2 copied in is replaced with the new one; a jar you put there
+  Mojang, verified, cached in `~/.cache/mspacker/jars/<version>`, and copied in. When you change
+  `version`, a jar that MSPacker copied in is replaced with the new one; a jar you put there
   yourself never is. Set `server.download: false` to never download.
 - **`server.properties`.** If there is none yet, dev creates one with RCON enabled and a random
   password. If you have your own, enable RCON yourself:
@@ -47,9 +47,9 @@ environment variable).
 
 ## Accepting the EULA
 
-mcjspacker2 never creates or edits `eula.txt`. The first time you run `mcjs2 dev`, the Minecraft
+mspacker never creates or edits `eula.txt`. The first time you run `mspacker dev`, the Minecraft
 server writes `server/eula.txt` and stops. Read the [Minecraft EULA](https://aka.ms/MinecraftEULA),
-set `eula=true` in that file if you agree, and run `mcjs2 dev` again. Dev keeps watching and
+set `eula=true` in that file if you agree, and run `mspacker dev` again. Dev keeps watching and
 rebuilding in the meantime.
 
 ## Joining the server
@@ -62,8 +62,8 @@ server console (`op <your name>`) to run `/function` in game.
 To build into a singleplayer world instead:
 
 ```sh
-npx mcjs2 dev --save "My World"
-npx mcjs2 dev --save auto      # the most recently played world
+npx mspacker dev --save "My World"
+npx mspacker dev --save auto      # the most recently played world
 ```
 
 Saves are found in the launcher's directory: `minecraftRoot` in the config, the `MINECRAFT_ROOT`
